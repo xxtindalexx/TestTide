@@ -131,7 +131,7 @@ namespace ACE.Server.WorldObjects
 
             var verb = BoostValue >= 0 ? "restores" : "takes";
 
-            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"The {Name} {verb} {vitalChange} points of your {BoosterEnum}.", ChatMessageType.Broadcast));
+            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"The {Name} {verb} {vitalChange:N0} points of your {BoosterEnum}.", ChatMessageType.Broadcast));
         }
 
         public void CastSpell(Player player)

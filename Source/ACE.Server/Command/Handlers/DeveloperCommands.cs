@@ -1554,7 +1554,7 @@ namespace ACE.Server.Command.Handlers
 
             amount = Math.Min(amount, (obj.ItemMaxMana ?? 0) - (obj.ItemCurMana ?? 0));
             obj.ItemCurMana += amount;
-            session.Network.EnqueueSend(new GameMessageSystemChat($"You give {amount} points of mana to the {obj.Name}.", ChatMessageType.Magic));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"You give {amount:N0} points of mana to the {obj.Name}.", ChatMessageType.Magic));
         }
 
         /// <summary>

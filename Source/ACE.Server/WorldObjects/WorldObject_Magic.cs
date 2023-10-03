@@ -551,15 +551,15 @@ namespace ACE.Server.WorldObjects
                 if (player != targetCreature)
                 {
                     if (spell.IsBeneficial)
-                        casterMessage = $"With {spell.Name} you restore {boost} points of {srcVital} to {targetCreature.Name}.";
+                        casterMessage = $"With {spell.Name} you restore {boost:N0} points of {srcVital} to {targetCreature.Name}.";
                     else
-                        casterMessage = $"With {spell.Name} you drain {Math.Abs(boost)} points of {srcVital} from {targetCreature.Name}.";
+                        casterMessage = $"With {spell.Name} you drain {Math.Abs(boost):N0} points of {srcVital} from {targetCreature.Name}.";
                 }
                 else
                 {
                     var verb = spell.IsBeneficial ? "restore" : "drain";
 
-                    casterMessage = $"You cast {spell.Name} and {verb} {Math.Abs(boost)} points of your {srcVital}.";
+                    casterMessage = $"You cast {spell.Name} and {verb} {Math.Abs(boost):N0} points of your {srcVital}.";
                 }
 
                 player.SendChatMessage(player, casterMessage, ChatMessageType.Magic);
@@ -570,10 +570,10 @@ namespace ACE.Server.WorldObjects
                 string targetMessage;
 
                 if (spell.IsBeneficial)
-                    targetMessage = $"{Name} casts {spell.Name} and restores {boost} points of your {srcVital}.";
+                    targetMessage = $"{Name} casts {spell.Name} and restores {boost:N0} points of your {srcVital}.";
                 else
                 {
-                    targetMessage = $"{Name} casts {spell.Name} and drains {Math.Abs(boost)} points of your {srcVital}.";
+                    targetMessage = $"{Name} casts {spell.Name} and drains {Math.Abs(boost):N0} points of your {srcVital}.";
 
                     if (creature != null)
                         targetPlayer.SetCurrentAttacker(creature);
@@ -862,16 +862,16 @@ namespace ACE.Server.WorldObjects
 
             if (playerSource != null && playerDestination != null && transferSource.Guid == destination.Guid)
             {
-                sourceMsg = $"You cast {spell.Name} on yourself and lose {srcVitalChange} points of {srcVital} and also gain {destVitalChange} points of {destVital}";
+                sourceMsg = $"You cast {spell.Name} on yourself and lose {srcVitalChange:N0} points of {srcVital} and also gain {destVitalChange:N0} points of {destVital}";
             }
             else
             {
                 if (playerSource != null)
                 {
                     if (transferSource == this)
-                        sourceMsg = $"You lose {srcVitalChange} points of {srcVital} due to casting {spell.Name} on {targetCreature.Name}";
+                        sourceMsg = $"You lose {srcVitalChange:N0} points of {srcVital} due to casting {spell.Name} on {targetCreature.Name}";
                     else
-                        targetMsg = $"You lose {srcVitalChange} points of {srcVital} due to {caster.Name} casting {spell.Name} on you";
+                        targetMsg = $"You lose {srcVitalChange:N0} points of {srcVital} due to {caster.Name} casting {spell.Name} on you";
 
                     if (destination is Creature creatureDestination)
                         playerSource.SetCurrentAttacker(creatureDestination);
@@ -880,9 +880,9 @@ namespace ACE.Server.WorldObjects
                 if (playerDestination != null)
                 {
                     if (destination == this)
-                        sourceMsg = $"You gain {destVitalChange} points of {destVital} due to casting {spell.Name} on {targetCreature.Name}";
+                        sourceMsg = $"You gain {destVitalChange:N0} points of {destVital} due to casting {spell.Name} on {targetCreature.Name}";
                     else
-                        targetMsg = $"You gain {destVitalChange} points of {destVital} due to {caster.Name} casting {spell.Name} on you";
+                        targetMsg = $"You gain {destVitalChange:N0} points of {destVital} due to {caster.Name} casting {spell.Name} on you";
                 }
             }
 

@@ -802,7 +802,7 @@ namespace ACE.Server.WorldObjects
             string verb = null, plural = null;
             Strings.GetAttackVerb(damageType, percent, ref verb, ref plural);
             var type = damageType.GetName().ToLower();
-            return $"You {verb} {creature.Name} for {amount} points of {type} damage!";
+            return $"You {verb} {creature.Name} for {amount:N0} points of {type} damage!";
         }
 
         public Dictionary<PropertyInt, int?> GetProperties(WorldObject wo)

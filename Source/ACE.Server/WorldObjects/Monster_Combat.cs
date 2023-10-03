@@ -346,12 +346,12 @@ namespace ACE.Server.WorldObjects
 
             if (damageType == DamageType.Nether)
             {
-                msg = $"You {verb} {Name} for {iAmount} points of periodic nether damage!";
+                msg = $"You {verb} {Name} for {iAmount:N0} points of periodic nether damage!";
                 type = ChatMessageType.Magic;
             }
             else if (aetheria)
             {
-                msg = $"With Surge of Affliction you {verb} {iAmount} points of health from {Name}!";
+                msg = $"With Surge of Affliction you {verb} {iAmount:N0} points of health from {Name}!";
                 type = ChatMessageType.Magic;
             }
             else
@@ -360,7 +360,7 @@ namespace ACE.Server.WorldObjects
                 var attack = skill.AdvancementClass == SkillAdvancementClass.Specialized ? "Bleeding Assault" : "Bleeding Blow";
                 msg = $"With {attack} you {verb} {iAmount} points of health from {Name}!";*/
 
-                msg = $"You bleed {Name} for {iAmount} points of periodic health damage!";
+                msg = $"You bleed {Name} for {iAmount:N0} points of periodic health damage!";
                 type = ChatMessageType.CombatSelf;
             }
             source.SendMessage(msg, type);

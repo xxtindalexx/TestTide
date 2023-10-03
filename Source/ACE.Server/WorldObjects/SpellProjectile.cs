@@ -856,13 +856,13 @@ namespace ACE.Server.WorldObjects
                 {
                     var critProt = critDefended ? " Your critical hit was avoided with their augmentation!" : "";
 
-                    var attackerMsg = $"{critMsg}{overpowerMsg}{sneakMsg}You {verb} {target.Name} for {amount} points with {Spell.Name}.{critProt}";
+                    var attackerMsg = $"{critMsg}{overpowerMsg}{sneakMsg}You {verb} {target.Name} for {amount:N0} points with {Spell.Name}.{critProt}";
 
                     // could these crit / sneak attack?
                     if (nonHealth)
                     {
                         var vital = Spell.Category == SpellCategory.StaminaLowering ? "stamina" : "mana";
-                        attackerMsg = $"With {Spell.Name} you drain {amount} points of {vital} from {target.Name}.";
+                        attackerMsg = $"With {Spell.Name} you drain {amount:N0} points of {vital} from {target.Name}.";
                     }
 
                     if (!sourcePlayer.SquelchManager.Squelches.Contains(target, ChatMessageType.Magic))
@@ -873,12 +873,12 @@ namespace ACE.Server.WorldObjects
                 {
                     var critProt = critDefended ? " Your augmentation allows you to avoid a critical hit!" : "";
 
-                    var defenderMsg = $"{critMsg}{overpowerMsg}{sneakMsg}{ProjectileSource.Name} {plural} you for {amount} points with {Spell.Name}.{critProt}";
+                    var defenderMsg = $"{critMsg}{overpowerMsg}{sneakMsg}{ProjectileSource.Name} {plural} you for {amount:N0} points with {Spell.Name}.{critProt}";
 
                     if (nonHealth)
                     {
                         var vital = Spell.Category == SpellCategory.StaminaLowering ? "stamina" : "mana";
-                        defenderMsg = $"{ProjectileSource.Name} casts {Spell.Name} and drains {amount} points of your {vital}.";
+                        defenderMsg = $"{ProjectileSource.Name} casts {Spell.Name} and drains {amount:N0} points of your {vital}.";
                     }
 
                     if (!targetPlayer.SquelchManager.Squelches.Contains(ProjectileSource, ChatMessageType.Magic))

@@ -436,7 +436,7 @@ namespace ACE.Server.WorldObjects
             //{
                 var nether = damageType == DamageType.Nether ? "nether " : "";
                 var chatMessageType = damageType == DamageType.Nether ? ChatMessageType.Magic : ChatMessageType.Combat;
-                var text = $"You receive {amount} points of periodic {nether}damage.";
+                var text = $"You receive {amount:N0} points of periodic {nether}damage.";
                 SendMessage(text, chatMessageType);
             //}
 
