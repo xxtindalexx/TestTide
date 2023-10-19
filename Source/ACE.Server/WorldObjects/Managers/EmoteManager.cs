@@ -1748,6 +1748,33 @@ namespace ACE.Server.WorldObjects.Managers
                                     }), $"You are about to spend {curVal8:N0} luminance to add 3 points to your summons damage resist rating. Are you sure?");
                                 }
                                 break;
+                            case "Weapon":
+                                long weaponAugs = player.LuminanceAugmentWeaponCount ?? 0;
+                                var curVal9 = emote.Amount + (weaponAugs * (emote.Amount * (1 + emote.Percent)));
+                                if (player.BankedLuminance < curVal9)
+                                {
+                                    player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You do not have enough luminance to use this gem. This will require {curVal9:N0} luminance to use.", ChatMessageType.Broadcast));
+                                }
+                                else
+                                {
+                                    player.ConfirmationManager.EnqueueSend(new Confirmation_Custom(player.Guid, () =>
+                                    {
+                                        if (player.BankedLuminance < curVal9)
+                                        {
+                                            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You do not have enough luminance to use this gem. This will require {curVal9:N0} luminance to use.", ChatMessageType.Broadcast));
+                                            return;
+                                        }
+                                        if (!player.SpendLuminance((long)curVal9))
+                                        {
+                                            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Failed to spend the necessary luminance. Please try again.", ChatMessageType.Broadcast));
+                                            return;
+                                        }
+                                        player.LuminanceAugmentWeaponCount = weaponAugs + 1;
+                                        player.TryConsumeFromInventoryWithNetworking(2003002, 1);
+                                        player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You have succesfully increased your weapon damage by 1.", ChatMessageType.Broadcast));
+                                    }), $"You are about to spend {curVal9:N0} luminance to add 1 point to your weapon damage. Are you sure?");
+                                }
+                                break;
                             default:
                                 break;
                         }

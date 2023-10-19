@@ -429,6 +429,11 @@ namespace ACE.Server.Entity
                 BaseDamageMod.ElementalBonus = WorldObject.GetMissileElementalDamageBonus(Weapon, attacker, DamageType);
 
             BaseDamage = (float)ThreadSafeRandom.Next(BaseDamageMod.MinDamage, BaseDamageMod.MaxDamage);
+
+            if (attacker.LuminanceAugmentWeaponCount.HasValue && attacker.LuminanceAugmentWeaponCount >= 1)
+            {
+                BaseDamage += (int)attacker.LuminanceAugmentWeaponCount.Value;
+            }
         }
 
         /// <summary>
