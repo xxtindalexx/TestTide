@@ -53,6 +53,12 @@ namespace ACE.Server.Managers
             Player_Tick_UpdateObjectPhysics,
             WorldObject_Tick_UpdateObjectPhysics,
 
+            // These are all mad scrambles to improve physics update object calls
+            PhysicsObject_Update_Object,
+            PhysicsObject_Update_ObjectInternal,
+            PhysicsObject_MakeTransition,
+            PhysicsObject_UpdatePositionInternal,
+
             // These are all found in Landblock.TickLandblockGroupThreadSafeWork()
             Landblock_Tick_RunActions,
             Landblock_Tick_Monster_Tick,

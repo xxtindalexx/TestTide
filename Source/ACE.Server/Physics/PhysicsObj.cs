@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 
@@ -29,6 +30,9 @@ namespace ACE.Server.Physics
     public class PhysicsObj
     {
         private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        // Used for cumulative ServerPerformanceMonitor event recording
+        protected readonly Stopwatch stopwatch = new Stopwatch();
 
         public uint ID;
         public ObjectGuid ObjID;
@@ -1175,112 +1179,126 @@ namespace ACE.Server.Physics
 
         public bool SetPositionInternal(Transition transition)
         {
-            var prevOnWalkable = (TransientState & TransientStateFlags.OnWalkable) != 0;
-            var transitCell = transition.SpherePath.CurCell;
-            var prevContact = (TransientState & TransientStateFlags.Contact) != 0;
-            var curPos = transition.SpherePath.CurPos;
-
-            if (transitCell == null)
+            try
             {
-                prepare_to_leave_visibility();
-                store_position(curPos);
+                stopwatch.Restart();
+                var prevOnWalkable = (TransientState & TransientStateFlags.OnWalkable) != 0;
+                var transitCell = transition.SpherePath.CurCell;
+                var prevContact = (TransientState & TransientStateFlags.Contact) != 0;
+                var curPos = transition.SpherePath.CurPos;
 
-                //ObjMaint.GotoLostCell(this, Position.ObjCellID);
-
-                set_active(false);
-                return true;
-            }
-
-            // modified: maintain consistency for Position.Frame in change_cell
-            set_frame(curPos.Frame);
-
-            if (transitCell.VariationId != CurCell?.VariationId)
-            {
-                change_cell(transitCell);
-            }
-            else if (transitCell.Equals(CurCell))
-            {
-                Position.ObjCellID = curPos.ObjCellID;
-                if (PartArray != null && !State.HasFlag(PhysicsState.ParticleEmitter))
-                    PartArray.SetCellID(curPos.ObjCellID);
-                if (Children != null)
+                if (transitCell == null)
                 {
-                    for (var i = 0; i < Children.NumObjects; i++)
+                    prepare_to_leave_visibility();
+                    store_position(curPos);
+
+                    //ObjMaint.GotoLostCell(this, Position.ObjCellID);
+
+                    set_active(false);
+                    return true;
+                }
+
+                // modified: maintain consistency for Position.Frame in change_cell
+                set_frame(curPos.Frame);
+
+                if (transitCell.VariationId != CurCell?.VariationId)
+                {
+                    change_cell(transitCell);
+                }
+                else if (transitCell.Equals(CurCell))
+                {
+                    Position.ObjCellID = curPos.ObjCellID;
+                    if (PartArray != null && !State.HasFlag(PhysicsState.ParticleEmitter))
+                        PartArray.SetCellID(curPos.ObjCellID);
+                    if (Children != null)
                     {
-                        var child = Children.Objects[i];
-                        child.Position.ObjCellID = curPos.ObjCellID;
-                        if (child.PartArray != null && !child.State.HasFlag(PhysicsState.ParticleEmitter))
-                            child.PartArray.SetCellID(curPos.ObjCellID);
+                        for (var i = 0; i < Children.NumObjects; i++)
+                        {
+                            var child = Children.Objects[i];
+                            child.Position.ObjCellID = curPos.ObjCellID;
+                            if (child.PartArray != null && !child.State.HasFlag(PhysicsState.ParticleEmitter))
+                                child.PartArray.SetCellID(curPos.ObjCellID);
+                        }
                     }
                 }
-            }
-            else
-            {
-                change_cell(transitCell);
-            }
-
-            //set_frame(curPos.Frame);
-
-            var collisions = transition.CollisionInfo;
-
-            ContactPlaneCellID = collisions.ContactPlaneCellID;
-            ContactPlane = collisions.ContactPlane;
-
-            if (collisions.ContactPlaneValid)
-                TransientState |= TransientStateFlags.Contact;
-            else
-                TransientState &= ~TransientStateFlags.Contact;
-
-            calc_acceleration();
-
-            if (collisions.ContactPlaneIsWater)
-                TransientState |= TransientStateFlags.WaterContact;
-            else
-                TransientState &= ~TransientStateFlags.WaterContact;
-
-            if (TransientState.HasFlag(TransientStateFlags.Contact))
-            {
-                if (ContactPlane.Normal.Z < PhysicsGlobals.FloorZ)
-                    set_on_walkable(false);
                 else
-                    set_on_walkable(true);
-            }
-            else
-            {
-                TransientState &= ~TransientStateFlags.OnWalkable;
+                {
+                    change_cell(transitCell);
+                }
 
-                if (MovementManager != null && prevOnWalkable)
-                    MovementManager.LeaveGround();
+                //set_frame(curPos.Frame);
+
+                var collisions = transition.CollisionInfo;
+
+                ContactPlaneCellID = collisions.ContactPlaneCellID;
+                ContactPlane = collisions.ContactPlane;
+
+                if (collisions.ContactPlaneValid)
+                    TransientState |= TransientStateFlags.Contact;
+                else
+                    TransientState &= ~TransientStateFlags.Contact;
 
                 calc_acceleration();
+
+                if (collisions.ContactPlaneIsWater)
+                    TransientState |= TransientStateFlags.WaterContact;
+                else
+                    TransientState &= ~TransientStateFlags.WaterContact;
+
+                if (TransientState.HasFlag(TransientStateFlags.Contact))
+                {
+                    if (ContactPlane.Normal.Z < PhysicsGlobals.FloorZ)
+                        set_on_walkable(false);
+                    else
+                        set_on_walkable(true);
+                }
+                else
+                {
+                    TransientState &= ~TransientStateFlags.OnWalkable;
+
+                    if (MovementManager != null && prevOnWalkable)
+                        MovementManager.LeaveGround();
+
+                    calc_acceleration();
+                }
+
+                SlidingNormal = collisions.SlidingNormal;
+
+                if (collisions.SlidingNormalValid)
+                    TransientState |= TransientStateFlags.Sliding;
+                else
+                    TransientState &= ~TransientStateFlags.Sliding;
+
+                handle_all_collisions(collisions, prevContact, prevOnWalkable);
+
+                if (CurCell != null)
+                {
+                    if (State.HasFlag(PhysicsState.HasPhysicsBSP))
+                    {
+                        calc_cross_cells(curPos.Variation);
+                        return true;
+                    }
+
+                    if (transition.CellArray.Cells.Count > 0)
+                    {
+                        remove_shadows_from_cells();
+                        add_shadows_to_cell(transition.CellArray);
+
+                        return true;
+                    }
+                }
+                return true;
             }
-
-            SlidingNormal = collisions.SlidingNormal;
-
-            if (collisions.SlidingNormalValid)
-                TransientState |= TransientStateFlags.Sliding;
-            else
-                TransientState &= ~TransientStateFlags.Sliding;
-
-            handle_all_collisions(collisions, prevContact, prevOnWalkable);
-
-            if (CurCell != null)
+            finally
             {
-                if (State.HasFlag(PhysicsState.HasPhysicsBSP))
+                var elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+                ServerPerformanceMonitor.AddToCumulativeEvent(ServerPerformanceMonitor.CumulativeEventHistoryType.PhysicsObject_Update_ObjectInternal, elapsedSeconds);
+                if (elapsedSeconds >= 0.0100) // Yea, that ain't good....
                 {
-                    calc_cross_cells(curPos.Variation);
-                    return true;
-                }
-
-                if (transition.CellArray.Cells.Count > 0)
-                {
-                    remove_shadows_from_cells();
-                    add_shadows_to_cell(transition.CellArray);
-
-                    return true;
+                    log.Warn($"[PERFORMANCE][PHYSICS] {Name} took {(elapsedSeconds * 1000):N1} ms to process SetPositionInternal()");
                 }
             }
-            return true;
+            
         }
 
         public SetPositionError SetPositionInternal(Position pos, SetPosition setPos, Transition transition)
@@ -1673,88 +1691,102 @@ namespace ACE.Server.Physics
 
         public void UpdateObjectInternal(double quantum)
         {
-            if ((TransientState & TransientStateFlags.Active) == 0 || CurCell == null)
-                return;
-
-            if ((TransientState & TransientStateFlags.CheckEthereal) != 0)
-                set_ethereal(false, false);
-
-            JumpedThisFrame = false;
-            var newPos = new Position(Position.ObjCellID);
-            newPos.Variation = Position.Variation;
-            UpdatePositionInternal(quantum, ref newPos.Frame);
-
-            if (PartArray != null && PartArray.GetNumSphere() != 0)
+            try
             {
-                if (newPos.Frame.Equals(Position.Frame))
+                stopwatch.Restart();
+                if ((TransientState & TransientStateFlags.Active) == 0 || CurCell == null)
+                    return;
+
+                if ((TransientState & TransientStateFlags.CheckEthereal) != 0)
+                    set_ethereal(false, false);
+
+                JumpedThisFrame = false;
+                var newPos = new Position(Position.ObjCellID);
+                newPos.Variation = Position.Variation;
+                UpdatePositionInternal(quantum, ref newPos.Frame);
+
+                if (PartArray != null && PartArray.GetNumSphere() != 0)
                 {
-                    CachedVelocity = Vector3.Zero;
-                    set_frame(newPos.Frame);
-                    InitialUpdates++;
-                }
-                else
-                {
-                    if ((State & PhysicsState.AlignPath) != 0)
+                    if (newPos.Frame.Equals(Position.Frame))
                     {
-                        var diff = newPos.Frame.Origin - Position.Frame.Origin;
-                        newPos.Frame.set_vector_heading(Vector3.Normalize(diff));
-                    }
-                    else if ((State & PhysicsState.Sledding) != 0 && Velocity != Vector3.Zero)
-                        newPos.Frame.set_vector_heading(Vector3.Normalize(Velocity));
-
-                    if (GetBlockDist(Position, newPos) > 1)
-                    {
-                        log.Warn($"WARNING: failed transition for {Name} from {Position} to {newPos}");
-                        return;
-                    }
-
-                    var transit = transition(Position, newPos, false);
-
-
-                    // temporarily modified while debug path is examined
-                    if (transit != null && transit.SpherePath.CurCell != null)
-                    {
-                        CachedVelocity = Position.GetOffset(transit.SpherePath.CurPos) / (float)quantum;
-
-                        SetPositionInternal(transit);
+                        CachedVelocity = Vector3.Zero;
+                        set_frame(newPos.Frame);
+                        InitialUpdates++;
                     }
                     else
                     {
-                        if (IsPlayer)
-                            log.Debug($"{Name} ({ID:X8}).UpdateObjectInternal({quantum}) - failed transition from {Position} to {newPos}");
-                        else if (transit != null && transit.SpherePath.CurCell == null)
-                            log.Warn($"{Name} ({ID:X8}).UpdateObjectInternal({quantum}) - avoided CurCell=null from {Position} to {newPos}");
+                        if ((State & PhysicsState.AlignPath) != 0)
+                        {
+                            var diff = newPos.Frame.Origin - Position.Frame.Origin;
+                            newPos.Frame.set_vector_heading(Vector3.Normalize(diff));
+                        }
+                        else if ((State & PhysicsState.Sledding) != 0 && Velocity != Vector3.Zero)
+                            newPos.Frame.set_vector_heading(Vector3.Normalize(Velocity));
 
-                        newPos.Frame.Origin = Position.Frame.Origin;
-                        set_initial_frame(newPos.Frame);
-                        CachedVelocity = Vector3.Zero;
+                        if (GetBlockDist(Position, newPos) > 1)
+                        {
+                            log.Warn($"WARNING: failed transition for {Name} from {Position} to {newPos}");
+                            return;
+                        }
+
+                        var transit = transition(Position, newPos, false);
+
+
+                        // temporarily modified while debug path is examined
+                        if (transit != null && transit.SpherePath.CurCell != null)
+                        {
+                            CachedVelocity = Position.GetOffset(transit.SpherePath.CurPos) / (float)quantum;
+
+                            SetPositionInternal(transit);
+                        }
+                        else
+                        {
+                            if (IsPlayer)
+                                log.Debug($"{Name} ({ID:X8}).UpdateObjectInternal({quantum}) - failed transition from {Position} to {newPos}");
+                            else if (transit != null && transit.SpherePath.CurCell == null)
+                                log.Warn($"{Name} ({ID:X8}).UpdateObjectInternal({quantum}) - avoided CurCell=null from {Position} to {newPos}");
+
+                            newPos.Frame.Origin = Position.Frame.Origin;
+                            set_initial_frame(newPos.Frame);
+                            CachedVelocity = Vector3.Zero;
+                        }
                     }
                 }
+                else
+                {
+                    if (MovementManager == null && (TransientState & TransientStateFlags.OnWalkable) != 0)
+                        TransientState &= ~TransientStateFlags.Active;
+
+                    newPos.Frame.Origin = Position.Frame.Origin;
+                    set_frame(newPos.Frame);
+                    CachedVelocity = Vector3.Zero;
+                    InitialUpdates++;
+                }
+
+                //if (DetectionManager != null) DetectionManager.CheckDetection();
+
+                if (TargetManager != null) TargetManager.HandleTargetting();
+
+                if (MovementManager != null) MovementManager.UseTime();
+
+                if (PartArray != null) PartArray.HandleMovement();
+
+                if (PositionManager != null) PositionManager.UseTime();
+
+                if (ParticleManager != null) ParticleManager.UpdateParticles();
+
+                if (ScriptManager != null) ScriptManager.UpdateScripts();
             }
-            else
+            finally
             {
-                if (MovementManager == null && (TransientState & TransientStateFlags.OnWalkable) != 0)
-                    TransientState &= ~TransientStateFlags.Active;
-
-                newPos.Frame.Origin = Position.Frame.Origin;
-                set_frame(newPos.Frame);
-                CachedVelocity = Vector3.Zero;
-                InitialUpdates++;
+                var elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+                ServerPerformanceMonitor.AddToCumulativeEvent(ServerPerformanceMonitor.CumulativeEventHistoryType.PhysicsObject_Update_ObjectInternal, elapsedSeconds);
+                if (elapsedSeconds >= 0.0100) // Yea, that ain't good....
+                {
+                    log.Warn($"[PERFORMANCE][PHYSICS] {Name} took {(elapsedSeconds * 1000):N1} ms to process UpdateObjectInternal({quantum})");
+                }
             }
-
-            //if (DetectionManager != null) DetectionManager.CheckDetection();
-
-            if (TargetManager != null) TargetManager.HandleTargetting();
-
-            if (MovementManager != null) MovementManager.UseTime();
-
-            if (PartArray != null) PartArray.HandleMovement();
-
-            if (PositionManager != null) PositionManager.UseTime();
-
-            if (ParticleManager != null) ParticleManager.UpdateParticles();
-
-            if (ScriptManager != null) ScriptManager.UpdateScripts();
+            
         }
 
         public static int GetBlockDist(Position a, Position b)
@@ -1881,26 +1913,40 @@ namespace ACE.Server.Physics
 
         public void UpdatePositionInternal(double quantum, ref AFrame newFrame)
         {
-            var offsetFrame = new AFrame();
-
-            if (!State.HasFlag(PhysicsState.Hidden))
+            try
             {
-                if (PartArray != null) PartArray.Update(quantum, ref offsetFrame);
+                stopwatch.Restart();
+                var offsetFrame = new AFrame();
 
-                if (TransientState.HasFlag(TransientStateFlags.OnWalkable))
-                    offsetFrame.Origin *= Scale;
-                else
-                    offsetFrame.Origin *= 0.0f;     // OnWalkable getting reset?
+                if (!State.HasFlag(PhysicsState.Hidden))
+                {
+                    if (PartArray != null) PartArray.Update(quantum, ref offsetFrame);
+
+                    if (TransientState.HasFlag(TransientStateFlags.OnWalkable))
+                        offsetFrame.Origin *= Scale;
+                    else
+                        offsetFrame.Origin *= 0.0f;     // OnWalkable getting reset?
+                }
+                if (PositionManager != null)
+                    PositionManager.AdjustOffset(offsetFrame, quantum);
+
+                newFrame = AFrame.Combine(Position.Frame, offsetFrame);
+
+                if (!State.HasFlag(PhysicsState.Hidden))
+                    UpdatePhysicsInternal((float)quantum, ref newFrame);
+
+                process_hooks();
             }
-            if (PositionManager != null)
-                PositionManager.AdjustOffset(offsetFrame, quantum);
-
-            newFrame = AFrame.Combine(Position.Frame, offsetFrame);
-
-            if (!State.HasFlag(PhysicsState.Hidden))
-                UpdatePhysicsInternal((float)quantum, ref newFrame);
-
-            process_hooks();
+            finally
+            {
+                var elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+                ServerPerformanceMonitor.AddToCumulativeEvent(ServerPerformanceMonitor.CumulativeEventHistoryType.PhysicsObject_UpdatePositionInternal, elapsedSeconds);
+                if (elapsedSeconds >= 0.0100) // Yea, that ain't good....
+                {
+                    log.Warn($"[PERFORMANCE][PHYSICS] {Name} took {(elapsedSeconds * 1000):N1} ms to process UpdatePositionInternal({quantum})");
+                }
+            }
+            
         }
 
         public void UpdateViewerDistance(float cypt, Vector3 heading)
@@ -4090,37 +4136,51 @@ namespace ACE.Server.Physics
 
         public Transition transition(Position oldPos, Position newPos, bool adminMove)
         {
-            var trans = Transition.MakeTransition();
-            if (trans == null) return null;
-
-            var objectInfo = get_object_info(trans, adminMove);
-            trans.InitObject(this, objectInfo.State);
-            trans.VariationId = newPos.Variation;
-
-            if (PartArray == null || PartArray.GetNumSphere() == 0)
-                trans.InitSphere(1, PhysicsGlobals.DummySphere, 1.0f);
-            else
+            try
             {
-                var sphere = PartArray != null ? PartArray.GetSphere() : null;
-                if (PartArray != null)
-                    trans.InitSphere(PartArray.GetNumSphere(), sphere, Scale);
+                stopwatch.Restart();
+                var trans = Transition.MakeTransition();
+                if (trans == null) return null;
+
+                var objectInfo = get_object_info(trans, adminMove);
+                trans.InitObject(this, objectInfo.State);
+                trans.VariationId = newPos.Variation;
+
+                if (PartArray == null || PartArray.GetNumSphere() == 0)
+                    trans.InitSphere(1, PhysicsGlobals.DummySphere, 1.0f);
                 else
-                    trans.InitSphere(0, sphere, Scale);
+                {
+                    var sphere = PartArray != null ? PartArray.GetSphere() : null;
+                    if (PartArray != null)
+                        trans.InitSphere(PartArray.GetNumSphere(), sphere, Scale);
+                    else
+                        trans.InitSphere(0, sphere, Scale);
+                }
+
+                trans.InitPath(CurCell, oldPos, newPos);
+
+                if ((TransientState & TransientStateFlags.StationaryStuck) != 0)
+                    trans.CollisionInfo.FramesStationaryFall = 3;
+                else if ((TransientState & TransientStateFlags.StationaryStop) != 0)
+                    trans.CollisionInfo.FramesStationaryFall = 2;
+                else if ((TransientState & TransientStateFlags.StationaryFall) != 0)
+                    trans.CollisionInfo.FramesStationaryFall = 1;
+
+                var validPos = trans.FindValidPosition();
+                trans.CleanupTransition();
+                if (!validPos) return null;
+                return trans;
             }
-
-            trans.InitPath(CurCell, oldPos, newPos);
-
-            if ((TransientState & TransientStateFlags.StationaryStuck) != 0)
-                trans.CollisionInfo.FramesStationaryFall = 3;
-            else if ((TransientState & TransientStateFlags.StationaryStop) != 0)
-                trans.CollisionInfo.FramesStationaryFall = 2;
-            else if ((TransientState & TransientStateFlags.StationaryFall) != 0)
-                trans.CollisionInfo.FramesStationaryFall = 1;
-
-            var validPos = trans.FindValidPosition();
-            trans.CleanupTransition();
-            if (!validPos) return null;
-            return trans;
+            finally
+            {
+                var elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+                ServerPerformanceMonitor.AddToCumulativeEvent(ServerPerformanceMonitor.CumulativeEventHistoryType.PhysicsObject_MakeTransition, elapsedSeconds);
+                if (elapsedSeconds >= 0.0100) // Yea, that ain't good....
+                {
+                    log.Warn($"[PERFORMANCE][PHYSICS] {Name} took {(elapsedSeconds * 1000):N1} ms to process transition from ({oldPos} to {newPos})");
+                }
+            }
+            
         }
 
         public void unpack_movement(Object addr, uint size)
@@ -4167,52 +4227,66 @@ namespace ACE.Server.Physics
 
         public bool update_object()
         {
-            if (Parent != null || CurCell == null || State.HasFlag(PhysicsState.Frozen))
+            try
             {
-                TransientState &= ~TransientStateFlags.Active;
-                return false;
-            }
-            /*if (PlayerObject != null)
-            {
-                PlayerVector = PlayerObject.Position.GetOffset(Position);
-                PlayerDistance = PlayerVector.Length();
-                if (PlayerDistance > 96.0f && ObjMaint.IsActive)
+                stopwatch.Restart();
+                if (Parent != null || CurCell == null || State.HasFlag(PhysicsState.Frozen))
+                {
                     TransientState &= ~TransientStateFlags.Active;
-                else
-                    set_active(true);   // sets UpdateTime
-            }*/
+                    return false;
+                }
+                /*if (PlayerObject != null)
+                {
+                    PlayerVector = PlayerObject.Position.GetOffset(Position);
+                    PlayerDistance = PlayerVector.Length();
+                    if (PlayerDistance > 96.0f && ObjMaint.IsActive)
+                        TransientState &= ~TransientStateFlags.Active;
+                    else
+                        set_active(true);   // sets UpdateTime
+                }*/
 
-            PhysicsTimer_CurrentTime = UpdateTime;
+                PhysicsTimer_CurrentTime = UpdateTime;
 
-            var deltaTime = PhysicsTimer.CurrentTime - UpdateTime;
+                var deltaTime = PhysicsTimer.CurrentTime - UpdateTime;
 
-            if (deltaTime < TickRate)
-                return false;
+                if (deltaTime < TickRate)
+                    return false;
 
-            //Console.WriteLine("deltaTime: " + deltaTime);
+                //Console.WriteLine("deltaTime: " + deltaTime);
 
-            // commented out for debugging
-            if (deltaTime > PhysicsGlobals.HugeQuantum)
+                // commented out for debugging
+                if (deltaTime > PhysicsGlobals.HugeQuantum)
+                {
+                    UpdateTime = PhysicsTimer.CurrentTime;   // consume time?
+                    return false;
+                }
+
+                while (deltaTime > PhysicsGlobals.MaxQuantum)
+                {
+                    PhysicsTimer_CurrentTime += PhysicsGlobals.MaxQuantum;
+                    UpdateObjectInternal(PhysicsGlobals.MaxQuantum);
+                    deltaTime -= PhysicsGlobals.MaxQuantum;
+                }
+
+                if (deltaTime > PhysicsGlobals.MinQuantum)
+                {
+                    PhysicsTimer_CurrentTime += deltaTime;
+                    UpdateObjectInternal(deltaTime);
+                }
+
+                UpdateTime = PhysicsTimer_CurrentTime;
+                return true;
+            }
+            finally
             {
-                UpdateTime = PhysicsTimer.CurrentTime;   // consume time?
-                return false;
+                var elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+                ServerPerformanceMonitor.AddToCumulativeEvent(ServerPerformanceMonitor.CumulativeEventHistoryType.PhysicsObject_Update_Object, elapsedSeconds);
+                if (elapsedSeconds >= 0.010)
+                {
+                    log.Warn($"[PERFORMANCE][PHYSICS] {Name} took {(elapsedSeconds * 1000):N1} ms to process update_object()");
+                }
             }
 
-            while (deltaTime > PhysicsGlobals.MaxQuantum)
-            {
-                PhysicsTimer_CurrentTime += PhysicsGlobals.MaxQuantum;
-                UpdateObjectInternal(PhysicsGlobals.MaxQuantum);
-                deltaTime -= PhysicsGlobals.MaxQuantum;
-            }
-
-            if (deltaTime > PhysicsGlobals.MinQuantum)
-            {
-                PhysicsTimer_CurrentTime += deltaTime;
-                UpdateObjectInternal(deltaTime);
-            }
-
-            UpdateTime = PhysicsTimer_CurrentTime;
-            return true;
         }
 
         public bool update_animation()
