@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-
+using System.Runtime.CompilerServices;
 using ACE.Common;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
@@ -497,7 +497,7 @@ namespace ACE.Server.Physics
             // although it could be added if needed
 
             if (CurLandblock != obj.CurLandblock)
-                return false;
+                return false;            
 
             var pSpheres = PartArray.GetSphere();
 
@@ -1371,8 +1371,8 @@ namespace ACE.Server.Physics
                 Console.WriteLine("SetPositionInternal: WorldObject null");
                 return SetPositionError.GeneralFailure;
             }
-                
-            if (setPos.Pos.Variation != null)
+
+            if (setPos.Pos.Variation.HasValue)
             {
                 transition.VariationId = setPos.Pos.Variation;
             }
@@ -1397,7 +1397,8 @@ namespace ACE.Server.Physics
         public SetPositionError SetPositionSimple(Position pos, bool sliding)
         {
             var setPos = new SetPosition();
-            setPos.Pos = new Position(pos);
+            //setPos.Pos = new Position(pos);
+            setPos.Pos = pos;
             setPos.Flags = SetPositionFlags.Teleport | SetPositionFlags.SendPositionEvent;
 
             if (sliding)
@@ -2137,6 +2138,7 @@ namespace ACE.Server.Physics
                 report_attacks(attackInfo);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void calc_acceleration()
         {
             if (TransientState.HasFlag(TransientStateFlags.Contact) && TransientState.HasFlag(TransientStateFlags.OnWalkable))
@@ -2150,6 +2152,7 @@ namespace ACE.Server.Physics
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void calc_cross_cells(int? variation)
         {
             CellArray.SetDynamic();
@@ -2171,6 +2174,7 @@ namespace ACE.Server.Physics
             add_shadows_to_cell(CellArray);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void calc_cross_cells_static(int? variation)
         {
             CellArray.SetStatic();
@@ -2184,6 +2188,7 @@ namespace ACE.Server.Physics
             add_shadows_to_cell(CellArray);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void calc_friction(double quantum, float velocity_mag2)
         {
             if (!TransientState.HasFlag(TransientStateFlags.OnWalkable)) return;
@@ -2281,12 +2286,13 @@ namespace ACE.Server.Physics
             return trans.CheckCollisions(obj);
         }
 
-        public bool check_contact(bool contact)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool check_contact()
         {
             if (TransientState.HasFlag(TransientStateFlags.Contact) && Vector3.Dot(Velocity, ContactPlane.Normal) > PhysicsGlobals.EPSILON)
                 return false;
             else
-                return contact;
+                return true;
         }
 
         public void clear_sequence_anims()
@@ -2662,7 +2668,7 @@ namespace ACE.Server.Physics
                 {
                     var isWater = TransientState.HasFlag(TransientStateFlags.WaterContact);
 
-                    if (check_contact(true))
+                    if (check_contact())
                     {
                         transition.InitContactPlane(ContactPlaneCellID, ContactPlane, isWater);
 
@@ -4175,10 +4181,15 @@ namespace ACE.Server.Physics
             {
                 var elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
                 ServerPerformanceMonitor.AddToCumulativeEvent(ServerPerformanceMonitor.CumulativeEventHistoryType.PhysicsObject_MakeTransition, elapsedSeconds);
-                if (elapsedSeconds >= 0.0100) // Yea, that ain't good....
+                if (elapsedSeconds >= 0.100 )
                 {
                     log.Warn($"[PERFORMANCE][PHYSICS] {Name} took {(elapsedSeconds * 1000):N1} ms to process transition from ({oldPos} to {newPos})");
                 }
+                else if (elapsedSeconds >= 0.0100) // Yea, that ain't good....
+                {
+                    log.Debug($"[PERFORMANCE][PHYSICS] {Name} took {(elapsedSeconds * 1000):N1} ms to process transition from ({oldPos} to {newPos})");
+                }
+                
             }
             
         }

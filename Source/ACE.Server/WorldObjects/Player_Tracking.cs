@@ -78,7 +78,7 @@ namespace ACE.Server.WorldObjects
         public bool AddTrackedObject(WorldObject worldObject)
         {
             // does this work for equipped objects?
-            if (ObjMaint.KnownObjectsContainsValue(worldObject.PhysicsObj))
+            if (ObjMaint.KnownObjectsContainsKey(worldObject.Guid.Full))
             {
                 //Console.WriteLine($"Player {Name} - AddTrackedObject({worldObject.Name}) skipped, already tracked");
                 return false;
