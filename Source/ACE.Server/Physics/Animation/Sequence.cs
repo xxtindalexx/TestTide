@@ -363,16 +363,16 @@ namespace ACE.Server.Physics.Animation
 
             if (frametime > 0.0f)
             {
-                if (currAnim.get_high_frame() < Math.Floor(frameNum))
+                if (currAnim.HighFrame < Math.Floor(frameNum))
                 {
-                    var frameOffset = frameNum - currAnim.get_high_frame() - 1.0f;
+                    var frameOffset = frameNum - currAnim.HighFrame - 1.0f;
                     if (frameOffset < 0.0f)
                         frameOffset = 0.0f;
 
                     if (Math.Abs(framerate) > PhysicsGlobals.EPSILON)
                         frameTimeElapsed = frameOffset / framerate;
 
-                    frameNum = currAnim.get_high_frame();
+                    frameNum = currAnim.HighFrame;
                     animDone = true;
                 }
                 while (Math.Floor(frameNum) > lastFrame)
@@ -392,16 +392,16 @@ namespace ACE.Server.Physics.Animation
             }
             else if (frametime < 0.0f)
             {
-                if (currAnim.get_low_frame() > Math.Floor(frameNum))
+                if (currAnim.LowFrame > Math.Floor(frameNum))
                 {
-                    var frameOffset = frameNum - currAnim.get_low_frame();
+                    var frameOffset = frameNum - currAnim.LowFrame;
                     if (frameOffset > 0.0f)
                         frameOffset = 0.0f;
 
                     if (Math.Abs(framerate) > PhysicsGlobals.EPSILON)
                         frameTimeElapsed = frameOffset / framerate;
 
-                    frameNum = currAnim.get_low_frame();
+                    frameNum = currAnim.LowFrame;
                     animDone = true;
                 }
                 while (Math.Floor(frameNum) < lastFrame)

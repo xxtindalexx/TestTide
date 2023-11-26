@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using ACE.Server.Physics.Common;
 using ACE.Server.Physics.Extensions;
 
@@ -108,23 +109,25 @@ namespace ACE.Server.Physics.Animation
             return Vector3.Transform(point, Orientation);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void GRotate(Vector3 rotation)
         {
             Orientation *= Quaternion.CreateFromYawPitchRoll(rotation.X, rotation.Y, rotation.Z);
             Orientation  = Quaternion.Normalize(Orientation);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Rotate(Vector3 rotation)
         {
             var angles = Vector3.Transform(rotation, Orientation);
             GRotate(angles);
         }
 
-        public void Rotate(Quaternion rotation)
-        {
-            Orientation = Quaternion.Multiply(rotation, Orientation);
-            Orientation = Quaternion.Normalize(Orientation);
-        }
+        //public void Rotate(Quaternion rotation)
+        //{
+        //    Orientation = Quaternion.Multiply(rotation, Orientation);
+        //    Orientation = Quaternion.Normalize(Orientation);
+        //}
 
         public void Subtract(AFrame frame)
         {
@@ -144,6 +147,7 @@ namespace ACE.Server.Physics.Animation
                    Math.Abs(ao.W - bo.W) < PhysicsGlobals.EPSILON;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float get_heading()
         {
             var matrix = Matrix4x4.CreateFromQuaternion(Orientation);

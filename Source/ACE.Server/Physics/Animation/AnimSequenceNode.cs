@@ -36,15 +36,15 @@ namespace ACE.Server.Physics.Animation
                 return LowFrame;
         }
 
-        public int get_high_frame()
-        {
-            return HighFrame;
-        }
+        //public int get_high_frame()
+        //{
+        //    return HighFrame;
+        //}
 
-        public int get_low_frame()
-        {
-            return LowFrame;
-        }
+        //public int get_low_frame()
+        //{
+        //    return LowFrame;
+        //}
 
         public AnimationFrame get_part_frame(int frameIdx)
         {

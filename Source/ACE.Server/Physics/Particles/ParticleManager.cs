@@ -51,16 +51,13 @@ namespace ACE.Server.Physics
 
         public void UpdateParticles()
         {
-            var remove = new List<int>();
-
-            foreach (var emitter in ParticleTable)
+            for (int i = ParticleTable.Count-1; i >= 0; i--)
             {
-                if (!emitter.Value.UpdateParticles())
-                    remove.Add(emitter.Key);
+                if (!ParticleTable[i].UpdateParticles())
+                {
+                    ParticleTable.Remove(ParticleTable[i].ID);
+                }
             }
-
-            foreach (var emitter in remove)
-                ParticleTable.Remove(emitter);
         }
 
         public bool StopParticleEmitter(int emitterID)

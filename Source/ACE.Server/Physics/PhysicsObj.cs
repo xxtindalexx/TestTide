@@ -1702,8 +1702,7 @@ namespace ACE.Server.Physics
                     set_ethereal(false, false);
 
                 JumpedThisFrame = false;
-                var newPos = new Position(Position.ObjCellID);
-                newPos.Variation = Position.Variation;
+                var newPos = new Position(Position.ObjCellID, Position.Frame, Position.Variation);
                 UpdatePositionInternal(quantum, ref newPos.Frame);
 
                 if (PartArray != null && PartArray.GetNumSphere() != 0)
@@ -1776,7 +1775,7 @@ namespace ACE.Server.Physics
 
                 if (ParticleManager != null) ParticleManager.UpdateParticles();
 
-                if (ScriptManager != null) ScriptManager.UpdateScripts();
+                //if (ScriptManager != null) ScriptManager.UpdateScripts();
             }
             finally
             {
