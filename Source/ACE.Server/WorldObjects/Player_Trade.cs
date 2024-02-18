@@ -151,7 +151,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            ItemsInTradeWindow.Add(new ObjectGuid(itemGuid));
+            ItemsInTradeWindow.Add(new ObjectGuid(itemGuid, this.Location.Variation));
 
             Session.Network.EnqueueSend(new GameEventAddToTrade(Session, itemGuid, TradeSide.Self));
 

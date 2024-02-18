@@ -1137,13 +1137,13 @@ namespace ACE.Server.Entity
 
         public WorldObject GetObject(uint objectId)
         {
-            return GetObject(new ObjectGuid(objectId));
+            return GetObject(new ObjectGuid(objectId, VariationId));
         }
 
         /// <summary>
         /// This will return null if the object was not found in the current or adjacent landblocks.
         /// </summary>
-        public WorldObject GetObject(ObjectGuid guid, bool searchAdjacents = true, bool searchVariations = false)
+        public WorldObject GetObject(ObjectGuid guid, bool searchAdjacents = true)
         {
             if (pendingRemovals.Contains(guid))
             {
@@ -1174,7 +1174,7 @@ namespace ACE.Server.Entity
 
         public WorldObject GetWieldedObject(uint objectGuid, bool searchAdjacents = true)
         {
-            return GetWieldedObject(new ObjectGuid(objectGuid), searchAdjacents); // todo fix
+            return GetWieldedObject(new ObjectGuid(objectGuid, VariationId), searchAdjacents); // todo fix
         }
 
         /// <summary>

@@ -32,7 +32,7 @@ namespace ACE.Server.Entity
         public OfflinePlayer(Biota biota)
         {
             Biota = biota;
-            Guid = new ObjectGuid(Biota.Id);
+            Guid = new ObjectGuid(Biota.Id, Biota.GetVariation(new ReaderWriterLockSlim()));
 
             var character = DatabaseManager.Shard.BaseDatabase.GetCharacterStubByGuid(Guid.Full);
 

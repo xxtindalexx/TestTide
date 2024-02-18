@@ -235,7 +235,7 @@ namespace ACE.Server.WorldObjects
             var sentItems = new List<WorldObject>();
             foreach (var item_id in item_ids)
             {
-                var item = GetInventoryItem(new ObjectGuid(item_id));
+                var item = GetInventoryItem(new ObjectGuid(item_id, this.Location.Variation));
                 if (item == null)
                 {
                     //Console.WriteLine($"Couldn't find inventory item {item_id:X8}");
@@ -737,7 +737,7 @@ namespace ACE.Server.WorldObjects
             var sentItems = new List<WorldObject>();
             foreach (var item_id in item_ids)
             {
-                var item = GetInventoryItem(new ObjectGuid(item_id));
+                var item = GetInventoryItem(new ObjectGuid(item_id, null));
                 if (item == null)
                 {
                     //Console.WriteLine($"Couldn't find inventory item {item_id:X8}");
@@ -952,7 +952,7 @@ namespace ACE.Server.WorldObjects
                 return House = House.Load(houseGuid);
 
             var loaded = LandblockManager.GetLandblock(landblockId, false, null);
-            return House = loaded.GetObject(new ObjectGuid(houseGuid)) as House;
+            return House = loaded.GetObject(new ObjectGuid(houseGuid, null)) as House;
         }
 
         public void HandleActionAddGuest(string guestName)
@@ -1545,7 +1545,7 @@ namespace ACE.Server.WorldObjects
 
             if (add)
             {
-                if (house.MonarchId != null && Guests.TryGetValue(new ObjectGuid(house.MonarchId.Value), out bool storage) && storage)
+                if (house.MonarchId != null && Guests.TryGetValue(new ObjectGuid(house.MonarchId.Value, null), out bool storage) && storage)
                 {
                     Session.Network.EnqueueSend(new GameMessageSystemChat($"The monarchy already has storage access in your dwelling.", ChatMessageType.Broadcast));
                     return;
@@ -1568,7 +1568,7 @@ namespace ACE.Server.WorldObjects
             }
             else
             {
-                if (house.MonarchId == null || Guests.TryGetValue(new ObjectGuid(house.MonarchId.Value), out bool storage) && !storage)
+                if (house.MonarchId == null || Guests.TryGetValue(new ObjectGuid(house.MonarchId.Value, null), out bool storage) && !storage)
                 {
                     Session.Network.EnqueueSend(new GameMessageSystemChat($"The monarchy did not have storage access to your dwelling.", ChatMessageType.Broadcast));
                     return;
@@ -1704,7 +1704,7 @@ namespace ACE.Server.WorldObjects
 
         public void HandleActionDoAllegianceHouseAction_StorageOpen(House allegianceHouse)
         {
-            if (allegianceHouse.MonarchId != null && allegianceHouse.Guests.TryGetValue(new ObjectGuid(allegianceHouse.MonarchId.Value), out bool storage) && storage)
+            if (allegianceHouse.MonarchId != null && allegianceHouse.Guests.TryGetValue(new ObjectGuid(allegianceHouse.MonarchId.Value, null), out bool storage) && storage)
             {
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"The monarchy already has storage access in the allegiance dwelling.", ChatMessageType.Broadcast));
                 return;
@@ -1734,7 +1734,7 @@ namespace ACE.Server.WorldObjects
 
         public void HandleActionDoAllegianceHouseAction_StorageClose(House allegianceHouse)
         {
-            if (allegianceHouse.MonarchId == null || allegianceHouse.Guests.TryGetValue(new ObjectGuid(allegianceHouse.MonarchId.Value), out bool storage) && !storage)
+            if (allegianceHouse.MonarchId == null || allegianceHouse.Guests.TryGetValue(new ObjectGuid(allegianceHouse.MonarchId.Value, null), out bool storage) && !storage)
             {
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"The monarchy already does not have storage access to the allegiance dwelling.", ChatMessageType.Broadcast));
                 return;
@@ -1790,7 +1790,7 @@ namespace ACE.Server.WorldObjects
             if (isLoaded)
             {
                 var loaded = LandblockManager.GetLandblock(landblockId, false, null);
-                return loaded.GetObject(new ObjectGuid(houseGuid)) as House;
+                return loaded.GetObject(new ObjectGuid(houseGuid, null)) as House;
             }
 
             // load an offline copy

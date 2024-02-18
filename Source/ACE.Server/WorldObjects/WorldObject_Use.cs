@@ -130,7 +130,7 @@ namespace ACE.Server.WorldObjects
 
             if (!(this is Creature) && ActivationTarget > 0)
             {
-                var activationTarget = CurrentLandblock?.GetObject(new ObjectGuid(ActivationTarget));
+                var activationTarget = CurrentLandblock?.GetObject(new ObjectGuid(ActivationTarget, this.Location.Variation));
                 if (activationTarget != null)
                     activationTarget.OnActivate(activator);
                 else

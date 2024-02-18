@@ -416,7 +416,7 @@ namespace ACE.Server.WorldObjects
                     return false;
                 }
 
-                var itemGuid = new ObjectGuid(itemProfile.ObjectGuid);
+                var itemGuid = new ObjectGuid(itemProfile.ObjectGuid, this.Location.Variation);
 
                 // check default items
                 if (DefaultItemsForSale.TryGetValue(itemGuid, out var defaultItemForSale))

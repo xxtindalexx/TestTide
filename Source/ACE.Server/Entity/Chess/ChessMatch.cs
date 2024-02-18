@@ -162,7 +162,7 @@ namespace ACE.Server.Entity.Chess
         public void AddSide(Player player, ChessColor color)
         {
             // ai is represented with object guid 0
-            var playerGuid = player != null ? player.Guid : new ObjectGuid(0);
+            var playerGuid = player != null ? player.Guid : new ObjectGuid(0, null);
 
             Sides[(int)color] = new ChessSide(playerGuid, color);
 
@@ -662,7 +662,7 @@ namespace ACE.Server.Entity.Chess
                 Console.WriteLine($"RemoveWeeniePiece - couldn't find {piece.Guid} @ {piece.Coord}");
                 return;
             }
-            piece.Guid = new ObjectGuid(0);
+            piece.Guid = new ObjectGuid(0,null);
             gamePiece.Destroy();
         }
 

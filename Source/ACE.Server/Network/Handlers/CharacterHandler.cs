@@ -118,7 +118,7 @@ namespace ACE.Server.Network.Handlers
                 return;
             }
 
-            var guid = GuidManager.NewPlayerGuid();
+            var guid = GuidManager.NewPlayerGuid(session.Player.Location.Variation);
 
             var weenieType = weenie.WeenieType;
 

@@ -1337,11 +1337,11 @@ namespace ACE.Server.Command.Handlers
                 if (session.Player.HealthQueryTarget.HasValue || session.Player.ManaQueryTarget.HasValue || session.Player.CurrentAppraisalTarget.HasValue)
                 {
                     if (session.Player.HealthQueryTarget.HasValue)
-                        objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                        objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
                     else if (session.Player.ManaQueryTarget.HasValue)
-                        objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                        objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
                     else
-                        objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                        objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
                     //var wo = session.Player.CurrentLandblock?.GetObject(objectId);
 

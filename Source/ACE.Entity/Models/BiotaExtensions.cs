@@ -186,6 +186,25 @@ namespace ACE.Entity.Models
             }
         }
 
+        public static int? GetVariation(this Biota biota, ReaderWriterLockSlim rwLock)
+        {
+            if (biota.PropertiesPosition == null || biota.PropertiesPosition[PositionType.Location] == null)
+                return null;
+
+            rwLock.EnterReadLock();
+            try
+            {
+                if (biota.PropertiesPosition.TryGetValue(PositionType.Location, out var value))
+                    return value.VariationId;
+
+                return null;
+            }
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
+        }
+
 
         // =====================================
         // Set

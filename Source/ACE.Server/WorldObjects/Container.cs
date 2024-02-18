@@ -253,7 +253,7 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         public WorldObject GetInventoryItem(uint objectGuid)
         {
-            return GetInventoryItem(new ObjectGuid(objectGuid), out _); // todo remove this so it doesnt' create a new ObjectGuid
+            return GetInventoryItem(new ObjectGuid(objectGuid, this.Location.Variation), out _); // todo remove this so it doesnt' create a new ObjectGuid
         }
 
         /// <summary>

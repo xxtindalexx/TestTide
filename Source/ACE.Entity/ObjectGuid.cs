@@ -1,3 +1,5 @@
+using ACE.Entity.Enum;
+
 namespace ACE.Entity
 {
     public enum GuidType
@@ -10,7 +12,7 @@ namespace ACE.Entity
 
     public struct ObjectGuid
     {
-        public static readonly ObjectGuid Invalid = new ObjectGuid(0);
+        public static readonly ObjectGuid Invalid = new ObjectGuid(0, null);
 
         /* These are not GUIDs
         public static uint WeenieMin { get; } = 0x00000001;
@@ -41,10 +43,12 @@ namespace ACE.Entity
         public uint Low => Full & 0xFFFFFF;
         public uint High => (Full >> 24);
         public GuidType Type { get; }
+        public int? variation_Id { get; set; }
 
-        public ObjectGuid(uint full)
+        public ObjectGuid(uint full, int? variation)
         {
             Full = full;
+            variation_Id = variation;   
 
             if (IsPlayer(full))
                 Type = GuidType.Player;
@@ -73,12 +77,12 @@ namespace ACE.Entity
 
         public static bool operator ==(ObjectGuid g1, ObjectGuid g2)
         {
-            return g1.Full == g2.Full;
+            return g1.Full == g2.Full && g1.variation_Id == g2.variation_Id;
         }
 
         public static bool operator !=(ObjectGuid g1, ObjectGuid g2)
         {
-            return g1.Full != g2.Full;
+            return g1.Full != g2.Full && g1.variation_Id != g2.variation_Id;
         }
 
         public override bool Equals(object obj)
@@ -88,12 +92,13 @@ namespace ACE.Entity
 
         public override int GetHashCode()
         {
-            return Full.GetHashCode();
+            var hash = Full.GetHashCode(); hash ^= variation_Id.GetHashCode();
+            return hash;
         }
 
         public override string ToString()
         {
-            return Full.ToString("X8");
+            return Full.ToString("X8") + variation_Id.ToString();
         }
     }
 }

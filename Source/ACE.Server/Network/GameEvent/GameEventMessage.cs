@@ -14,7 +14,7 @@ namespace ACE.Server.Network.GameEvent
             EventType = eventType;
             Session = session;
 
-            var guid = session.Player != null ? session.Player.Guid : new ObjectGuid(0);
+            var guid = session.Player != null ? session.Player.Guid : new ObjectGuid(0, null);
 
             Writer.WriteGuid(guid);
             //var debugMessage = $"GameEventSequence Update - {eventType} - GameEventSequence was {session.GameEventSequence}";

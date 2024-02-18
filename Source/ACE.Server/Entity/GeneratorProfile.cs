@@ -509,7 +509,7 @@ namespace ACE.Server.Entity
             }
             foreach (var spawned in Spawned.Keys)
             {
-                var inventoryObjGuid = new ObjectGuid(spawned);
+                var inventoryObjGuid = new ObjectGuid(spawned, Generator.Location.Variation);
                 if (!container.Inventory.TryGetValue(inventoryObjGuid, out var inventoryObj))
                 {
                     log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.RemoveTreasure(): couldn't find {inventoryObjGuid}");

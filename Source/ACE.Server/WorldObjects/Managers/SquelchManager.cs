@@ -85,7 +85,7 @@ namespace ACE.Server.WorldObjects.Managers
 
             if (playerGuid != 0)
             {
-                player = PlayerManager.FindByGuid(new ObjectGuid(playerGuid));
+                player = PlayerManager.FindByGuid(new ObjectGuid(playerGuid, null));
 
                 if (player == null)
                 {

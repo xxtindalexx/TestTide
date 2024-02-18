@@ -131,7 +131,7 @@ namespace ACE.Server.WorldObjects
                     if (houseInstance != null)
                     {
                         var weenie = DatabaseManager.World.GetCachedWeenie(houseInstance.WeenieClassId);
-                        var objectGuid = new ObjectGuid(houseInstance.Guid);
+                        var objectGuid = new ObjectGuid(houseInstance.Guid, null); //todo: houses are never variation aware
 
                         var newWorldObject = WorldObjectFactory.CreateWorldObject(weenie, objectGuid);
 
@@ -277,7 +277,7 @@ namespace ACE.Server.WorldObjects
             if (wo.HouseOwner != HouseOwner)
             {
                 //Console.WriteLine($"{Name}.UpdateLinkProperties({wo.Name} - {wo.Guid}) - HouseOwner: {HouseOwner:X8}");
-                wo.EnqueueBroadcast(new GameMessagePublicUpdateInstanceID(wo, PropertyInstanceId.HouseOwner, new ObjectGuid(HouseOwner ?? 0)));
+                wo.EnqueueBroadcast(new GameMessagePublicUpdateInstanceID(wo, PropertyInstanceId.HouseOwner, new ObjectGuid(HouseOwner ?? 0, null)));
             }
 
             SetLinkProperties(wo);
@@ -306,12 +306,12 @@ namespace ACE.Server.WorldObjects
             {
                 if (storage)
                 {
-                    if (StorageAccess.Contains(new ObjectGuid(MonarchId.Value)))
+                    if (StorageAccess.Contains(new ObjectGuid(MonarchId.Value, null)))
                         return true;
                 }
                 else
                 {
-                    if (Guests.ContainsKey(new ObjectGuid(MonarchId.Value)))
+                    if (Guests.ContainsKey(new ObjectGuid(MonarchId.Value, null)))
                         return true;
                 }
             }
@@ -533,7 +533,7 @@ namespace ACE.Server.WorldObjects
                 if (_rootGuid == null)
                 {
                     if (HouseCell.RootGuids.TryGetValue(Guid.Full, out var rootGuid))
-                        _rootGuid = new ObjectGuid(rootGuid);
+                        _rootGuid = new ObjectGuid(rootGuid, null);
                     else
                     {
                         log.Error($"House.RootGuid - couldn't find root guid for house guid {Guid}");
@@ -549,7 +549,7 @@ namespace ACE.Server.WorldObjects
             if (MonarchId == null)
                 return null;
 
-            if (!Guests.TryGetValue(new ObjectGuid(MonarchId.Value), out bool storage))
+            if (!Guests.TryGetValue(new ObjectGuid(MonarchId.Value, null), out bool storage))
                 return null;
 
             return storage;
@@ -566,7 +566,7 @@ namespace ACE.Server.WorldObjects
                 return House.Load(houseGuid);
 
             var loaded = LandblockManager.GetLandblock(landblockId, false, null);
-            return loaded.GetObject(new ObjectGuid(houseGuid)) as House;
+            return loaded.GetObject(new ObjectGuid(houseGuid, null)) as House;
         }
 
         public House GetDungeonHouse()
@@ -656,7 +656,7 @@ namespace ACE.Server.WorldObjects
 
             var nearbyPlayers = PhysicsObj.ObjMaint.GetKnownPlayersValuesAsPlayer();
             foreach (var player in nearbyPlayers)
-                player.Session.Network.EnqueueSend(new GameMessagePublicUpdateInstanceID(this, PropertyInstanceId.HouseOwner, new ObjectGuid(restrictions.HouseOwner)),
+                player.Session.Network.EnqueueSend(new GameMessagePublicUpdateInstanceID(this, PropertyInstanceId.HouseOwner, new ObjectGuid(restrictions.HouseOwner, null)),
                                                    new GameEventHouseUpdateRestrictions(player.Session, this, restrictions));
         }
 

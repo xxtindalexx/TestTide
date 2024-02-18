@@ -37,7 +37,7 @@ namespace ACE.Server.Network.Structure
             OpenStatus = house.OpenStatus;
 
             if (house.MonarchId != null)
-                MonarchID = new ObjectGuid(house.MonarchId.Value);      // for allegiance guest/storage access
+                MonarchID = new ObjectGuid(house.MonarchId.Value, null);      // for allegiance guest/storage access
 
             foreach (var guest in house.Guests)
             {

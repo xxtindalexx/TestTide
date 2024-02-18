@@ -269,7 +269,7 @@ namespace ACE.Server.Command.Handlers
                         // add the sound to the player queue for everyone to hear
                         // player action queue items will execute on the landblock
                         // player.playsound will play a sound on only the client session that called the function
-                        session.Player.PlaySoundEffect(sound, new ObjectGuid(guid), volume);
+                        session.Player.PlaySoundEffect(sound, new ObjectGuid(guid, session.Player.Location.Variation), volume);
                     }
                 }
 
@@ -1275,11 +1275,11 @@ namespace ACE.Server.Command.Handlers
             var objectId = new ObjectGuid();
 
             if (session.Player.HealthQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
             else if (session.Player.ManaQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
             else if (session.Player.CurrentAppraisalTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
             var wo = session.Player.CurrentLandblock?.GetObject(objectId);
 
@@ -1430,7 +1430,7 @@ namespace ACE.Server.Command.Handlers
                 Console.WriteLine("ERROR: no appraisal target");
                 return;
             }
-            var targetGuid = new ObjectGuid(targetID.Value);
+            var targetGuid = new ObjectGuid(targetID.Value, session.Player.Location.Variation);
             var target = session.Player.CurrentLandblock?.GetObject(targetGuid);
             if (target == null)
             {
@@ -1472,7 +1472,7 @@ namespace ACE.Server.Command.Handlers
                 Console.WriteLine("ERROR: no appraisal target");
                 return;
             }
-            var targetGuid = new ObjectGuid(targetID.Value);
+            var targetGuid = new ObjectGuid(targetID.Value, session.Player.Location.Variation);
             var target = session.Player.CurrentLandblock?.GetObject(targetGuid);
             if (target == null)
             {
@@ -2756,11 +2756,11 @@ namespace ACE.Server.Command.Handlers
             if (session.Player.HealthQueryTarget.HasValue || session.Player.ManaQueryTarget.HasValue || session.Player.CurrentAppraisalTarget.HasValue)
             {
                 if (session.Player.HealthQueryTarget.HasValue)
-                    objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                    objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
                 else if (session.Player.ManaQueryTarget.HasValue)
-                    objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                    objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
                 else
-                    objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                    objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
                 var wo = session.Player.CurrentLandblock?.GetObject(objectId);
 
@@ -3742,11 +3742,11 @@ namespace ACE.Server.Command.Handlers
             if (session.Player.HealthQueryTarget.HasValue || session.Player.ManaQueryTarget.HasValue || session.Player.CurrentAppraisalTarget.HasValue)
             {
                 if (session.Player.HealthQueryTarget.HasValue)
-                    objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                    objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
                 else if (session.Player.ManaQueryTarget.HasValue)
-                    objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                    objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
                 else
-                    objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                    objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
                 var wo = session.Player.CurrentLandblock?.GetObject(objectId);
 

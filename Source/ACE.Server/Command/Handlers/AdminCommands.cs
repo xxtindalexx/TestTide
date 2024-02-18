@@ -100,11 +100,11 @@ namespace ACE.Server.Command.Handlers
             var objectId = ObjectGuid.Invalid;
 
             if (session.Player.HealthQueryTarget.HasValue)
-                objectId = new ObjectGuid(session.Player.HealthQueryTarget.Value);
+                objectId = new ObjectGuid(session.Player.HealthQueryTarget.Value, session.Player.Location.Variation);
             else if (session.Player.ManaQueryTarget.HasValue)
-                objectId = new ObjectGuid(session.Player.ManaQueryTarget.Value);
+                objectId = new ObjectGuid(session.Player.ManaQueryTarget.Value, session.Player.Location.Variation);
             else if (session.Player.CurrentAppraisalTarget.HasValue)
-                objectId = new ObjectGuid(session.Player.CurrentAppraisalTarget.Value);
+                objectId = new ObjectGuid(session.Player.CurrentAppraisalTarget.Value, session.Player.Location.Variation);
 
             if (objectId == ObjectGuid.Invalid)
                 ChatPacket.SendServerMessage(session, "Delete failed. Please identify the object you wish to delete first.", ChatMessageType.Broadcast);
@@ -558,11 +558,11 @@ namespace ACE.Server.Command.Handlers
             if (session.Player.HealthQueryTarget.HasValue || session.Player.ManaQueryTarget.HasValue || session.Player.CurrentAppraisalTarget.HasValue)
             {
                 if (session.Player.HealthQueryTarget.HasValue)
-                    objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                    objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
                 else if (session.Player.ManaQueryTarget.HasValue)
-                    objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                    objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
                 else
-                    objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                    objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
                 var wo = session.Player.CurrentLandblock?.GetObject(objectId);
 
@@ -762,7 +762,7 @@ namespace ACE.Server.Command.Handlers
             {
                 if (session.Player.HealthQueryTarget.HasValue) // Only Creatures will trigger this.. Excludes vendors automatically as a result (Can change design to mimic @delete command)
                 {
-                    var objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                    var objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
 
                     var wo = session.Player.CurrentLandblock?.GetObject(objectId) as Creature;
 
@@ -1001,11 +1001,11 @@ namespace ACE.Server.Command.Handlers
             if (session.Player.HealthQueryTarget.HasValue || session.Player.ManaQueryTarget.HasValue || session.Player.CurrentAppraisalTarget.HasValue)
             {
                 if (session.Player.HealthQueryTarget.HasValue)
-                    objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                    objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
                 else if (session.Player.ManaQueryTarget.HasValue)
-                    objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                    objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
                 else
-                    objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                    objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
                 var wo = session.Player.CurrentLandblock?.GetObject(objectId);
 
@@ -1265,7 +1265,7 @@ namespace ACE.Server.Command.Handlers
 
                         if (house != null)
                         {
-                            var houseData = house.GetHouseData(PlayerManager.FindByGuid(new ObjectGuid(house.HouseOwner ?? 0)));
+                            var houseData = house.GetHouseData(PlayerManager.FindByGuid(new ObjectGuid(house.HouseOwner ?? 0, null)));
                             msg += $"{house.HouseType} | Owner: {house.HouseOwnerName} (0x{house.HouseOwner:X8}) | BuyTime: {Time.GetDateTimeFromTimestamp(houseData.BuyTime).ToLocalTime()} ({houseData.BuyTime}) | RentTime: {Time.GetDateTimeFromTimestamp(houseData.RentTime).ToLocalTime()} ({houseData.RentTime}) | RentDue: {Time.GetDateTimeFromTimestamp(house.GetRentDue(houseData.RentTime)).ToLocalTime()} ({house.GetRentDue(houseData.RentTime)}) | Rent is {(house.SlumLord.IsRentPaid() ? "" : "NOT ")}paid{(house.HouseStatus != HouseStatus.Active ? $"  ({house.HouseStatus})" : "")}";
                         }
                         else
@@ -1653,11 +1653,11 @@ namespace ACE.Server.Command.Handlers
         {
             ObjectGuid objectId;
             if (session.Player.HealthQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
             else if (session.Player.ManaQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
             else
-                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
             target = session.Player.CurrentLandblock?.GetObject(objectId);
 
@@ -1905,7 +1905,7 @@ namespace ACE.Server.Command.Handlers
                                 return;
                             }
 
-                            var newPlayerGuid = GuidManager.NewPlayerGuid();
+                            var newPlayerGuid = GuidManager.NewPlayerGuid(session.Player.Location.Variation);
 
                             var newCharacter = new Database.Models.Shard.Character
                             {
@@ -1962,7 +1962,7 @@ namespace ACE.Server.Command.Handlers
                             foreach (var item in existingPossessions.WieldedItems)
                             {
                                 var newItemBiota = Database.Adapter.BiotaConverter.ConvertToEntityBiota(item);
-                                var newGuid = GuidManager.NewDynamicGuid();
+                                var newGuid = GuidManager.NewDynamicGuid(session.Player.Location.Variation);
                                 idSwaps[newItemBiota.Id] = newGuid.Full;
                                 newItemBiota.Id = newGuid.Full;
                                 newTempWieldedItems.Add(newItemBiota);
@@ -1975,7 +1975,7 @@ namespace ACE.Server.Command.Handlers
                                     continue;
 
                                 var newItemBiota = Database.Adapter.BiotaConverter.ConvertToEntityBiota(item);
-                                var newGuid = GuidManager.NewDynamicGuid();
+                                var newGuid = GuidManager.NewDynamicGuid(session.Player.Location.Variation);
                                 idSwaps[newItemBiota.Id] = newGuid.Full;
                                 newItemBiota.Id = newGuid.Full;
                                 newTempInventoryItems.Add(newItemBiota);
@@ -2624,7 +2624,7 @@ namespace ACE.Server.Command.Handlers
             bool notOK = false;
             if (session.Player.CurrentAppraisalTarget.HasValue)
             {
-                var objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                var objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
                 var wo = session.Player.CurrentLandblock?.GetObject(objectId);
                 if (wo is Lock @lock)
                 {
@@ -2737,11 +2737,11 @@ namespace ACE.Server.Command.Handlers
             var objectId = ObjectGuid.Invalid;
 
             if (session.Player.HealthQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
             else if (session.Player.ManaQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
             else if (session.Player.CurrentAppraisalTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
             if (objectId == ObjectGuid.Invalid)
             {
@@ -2858,11 +2858,11 @@ namespace ACE.Server.Command.Handlers
             var objectId = ObjectGuid.Invalid;
 
             if (session.Player.HealthQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
             else if (session.Player.ManaQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
             else if (session.Player.CurrentAppraisalTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
             if (objectId == ObjectGuid.Invalid)
             {
@@ -3442,11 +3442,11 @@ namespace ACE.Server.Command.Handlers
             var objectId = ObjectGuid.Invalid;
 
             if (session.Player.HealthQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
             else if (session.Player.ManaQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
             else if (session.Player.CurrentAppraisalTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
             if (objectId == ObjectGuid.Invalid)
                 objectId = session.Player.Guid;
@@ -3547,7 +3547,7 @@ namespace ACE.Server.Command.Handlers
 
             session.Network.EnqueueSend(new GameMessageSystemChat($"Morphing you into {weenie.GetProperty(PropertyString.Name)} ({weenieDesc})... You will be logged out.", ChatMessageType.Broadcast));
 
-            var guid = GuidManager.NewPlayerGuid();
+            var guid = GuidManager.NewPlayerGuid(session.Player.Location.Variation);
 
             var player = new Player(weenie, guid, session.AccountId);
 
@@ -3667,11 +3667,11 @@ namespace ACE.Server.Command.Handlers
             var objectId = new ObjectGuid();
 
             if (session.Player.HealthQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.HealthQueryTarget, session.Player.Location.Variation);
             else if (session.Player.ManaQueryTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget);
+                objectId = new ObjectGuid((uint)session.Player.ManaQueryTarget, session.Player.Location.Variation);
             else if (session.Player.CurrentAppraisalTarget.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget, session.Player.Location.Variation);
 
             var wo = session.Player.CurrentLandblock?.GetObject(objectId);
 
@@ -4573,7 +4573,7 @@ namespace ACE.Server.Command.Handlers
                     if (allegiance.MonarchId == monarchID)
                         continue;
 
-                    if (allegiance.Members.TryGetValue(new ObjectGuid(monarchID), out var member))
+                    if (allegiance.Members.TryGetValue(new ObjectGuid(monarchID, null), out var member))
                     {
                         var desynced = PlayerManager.FindByGuid(monarchID);
                         Console.WriteLine($"{player.Name} has references to {desynced.Name} as monarch, but should be {allegiance.Monarch.Player.Name} -- fixing");

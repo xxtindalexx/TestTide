@@ -250,7 +250,7 @@ namespace ACE.Server.WorldObjects
                 return TargetCategory.Wielded;
 
             // known trade objects
-            var tradePartner = GetKnownTradeObj(new ObjectGuid(targetGuid));
+            var tradePartner = GetKnownTradeObj(new ObjectGuid(targetGuid, this.Location.Variation));
             if (tradePartner != null)
             {
                 target = tradePartner.GetEquippedItem(targetGuid);

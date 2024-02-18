@@ -718,7 +718,7 @@ namespace ACE.Server.Managers
 
             // landblock is loaded, return a reference to the current House object
             var loaded = LandblockManager.GetLandblock(landblockId, false, null, false);
-            var house = loaded.GetObject(new ObjectGuid(houseGuid)) as House;
+            var house = loaded.GetObject(new ObjectGuid(houseGuid, null)) as House; //todo:  houses can't handle variations
 
             if (house != null && house.SlumLord != null)
             {

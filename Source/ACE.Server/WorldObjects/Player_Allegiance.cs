@@ -1471,7 +1471,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            var patron = PlayerManager.FindByGuid(new ObjectGuid(player.PatronId ?? 0));
+            var patron = PlayerManager.FindByGuid(new ObjectGuid(player.PatronId ?? 0, this.Location.Variation));
             if (patron == null)
             {
                 Console.WriteLine($"{Name}.HandleActionBreakAllegianceBoot({player.Name}, {accountBoot}): couldn't find patron id {player.PatronId}");

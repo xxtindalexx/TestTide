@@ -273,7 +273,7 @@ namespace ACE.Server.WorldObjects
             {
                 byte[] msg = Convert.FromBase64String("Z2FtZXNkZWFkbG9s");
                 var popupGDL = new GameEventPopupString(player.Session, System.Text.Encoding.UTF8.GetString(msg, 0, msg.Length));
-                var msgGameOver2 = new GameEventGameOver(player.Session, new ObjectGuid(0), -2);
+                var msgGameOver2 = new GameEventGameOver(player.Session, new ObjectGuid(0, this.Location.Variation), -2);
                 player.Session.Network.EnqueueSend(popupGDL, msgGameOver2);
                 player.ChessGamesLost++;
                 player.ChessTotalGames++;

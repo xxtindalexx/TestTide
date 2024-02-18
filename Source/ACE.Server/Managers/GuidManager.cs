@@ -110,9 +110,9 @@ namespace ACE.Server.Managers
             private uint current;
             private readonly string name;
 
-            private static readonly TimeSpan recycleTime = TimeSpan.FromMinutes(360);
+            private static readonly TimeSpan recycleTime = TimeSpan.FromMinutes(720);
 
-            private readonly Queue<Tuple<DateTime, uint>> recycledGuids = new Queue<Tuple<DateTime, uint>>();
+            private readonly Queue<Tuple<DateTime, ObjectGuid>> recycledGuids = new Queue<Tuple<DateTime, ObjectGuid>>();
 
             /// <summary>
             /// The value here is the result of two factors:
@@ -185,7 +185,7 @@ namespace ACE.Server.Managers
                 this.name = name;
             }
 
-            public uint Alloc()
+            public ObjectGuid Alloc(int? variation)
             {
                 lock (this)
                 {
@@ -211,7 +211,7 @@ namespace ACE.Server.Managers
                         else
                             availableIDs.First.Value = (availableIDs.First.Value.start + 1, availableIDs.First.Value.end);
 
-                        return id;
+                        return new ObjectGuid(id, variation);
                     }
                     else
                     {
@@ -226,7 +226,7 @@ namespace ACE.Server.Managers
                     if (current == max)
                     {
                         log.Fatal($"Out of {name} GUIDs!");
-                        return InvalidGuid;
+                        return new ObjectGuid(InvalidGuid, null);
                     }
 
                     if (current == max - LowIdLimit)
@@ -235,7 +235,7 @@ namespace ACE.Server.Managers
                     uint ret = current;
                     current += 1;
 
-                    return ret;
+                    return new ObjectGuid(ret, variation);
                 }
             }
 
@@ -249,10 +249,10 @@ namespace ACE.Server.Managers
                 return current;
             }
 
-            public void Recycle(uint guid)
+            public void Recycle(ObjectGuid guid)
             {
                 lock (this)
-                    recycledGuids.Enqueue(new Tuple<DateTime, uint>(DateTime.UtcNow, guid));
+                    recycledGuids.Enqueue(new Tuple<DateTime, ObjectGuid>(DateTime.UtcNow, guid));
             }
 
             public override string ToString()
@@ -300,9 +300,9 @@ namespace ACE.Server.Managers
         /// <summary>
         /// Returns New Player Guid
         /// </summary>
-        public static ObjectGuid NewPlayerGuid()
+        public static ObjectGuid NewPlayerGuid(int? variation)
         {
-            return new ObjectGuid(playerAlloc.Alloc());
+            return new ObjectGuid(playerAlloc.Alloc(), variation);
         }
 
         /// <summary>
@@ -310,9 +310,9 @@ namespace ACE.Server.Managers
         /// Some of them will be saved to the Shard db.
         /// They can be monsters, loot, etc..
         /// </summary>
-        public static ObjectGuid NewDynamicGuid()
+        public static ObjectGuid NewDynamicGuid(int? variation)
         {
-            return new ObjectGuid(dynamicAlloc.Alloc());
+            return dynamicAlloc.Alloc(variation);
         }
 
         /// <summary>
@@ -321,7 +321,7 @@ namespace ACE.Server.Managers
         /// <param name="guid"></param>
         public static void RecycleDynamicGuid(ObjectGuid guid)
         {
-            dynamicAlloc.Recycle(guid.Full);
+            dynamicAlloc.Recycle(guid);
         }
 
 

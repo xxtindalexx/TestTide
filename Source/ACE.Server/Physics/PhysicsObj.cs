@@ -3412,7 +3412,7 @@ namespace ACE.Server.Physics
                     if (!collision.State.HasFlag(PhysicsState.ReportCollisionsAsEnvironment))
                     {
                         if (State.HasFlag(PhysicsState.ReportCollisions) && WeenieObj != null)
-                            WeenieObj.DoCollisionEnd(new ObjectGuid(objectID));
+                            WeenieObj.DoCollisionEnd(new ObjectGuid(objectID, this.Position.Variation));
 
                         if (collision.State.HasFlag(PhysicsState.ReportCollisions) && collision.WeenieObj != null)
                             collision.WeenieObj.DoCollisionEnd(ObjID);
@@ -3421,7 +3421,7 @@ namespace ACE.Server.Physics
                 return true;
             }
             if (State.HasFlag(PhysicsState.ReportCollisions) && WeenieObj != null)
-                WeenieObj.DoCollisionEnd(new ObjectGuid(objectID));
+                WeenieObj.DoCollisionEnd(new ObjectGuid(objectID, this.Position.Variation));
 
             return false;
         }

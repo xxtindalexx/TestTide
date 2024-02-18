@@ -432,7 +432,7 @@ namespace ACE.Server.Managers
 
         public static Allegiance FindAllegiance(uint allegianceID)
         {
-            Allegiances.TryGetValue(new ObjectGuid(allegianceID), out var allegiance);
+            Allegiances.TryGetValue(new ObjectGuid(allegianceID, null), out var allegiance);
             return allegiance;
         }
 

@@ -69,7 +69,7 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         public WorldObject GetEquippedItem(uint objectGuid)
         {
-            return EquippedObjects.TryGetValue(new ObjectGuid(objectGuid), out var item) ? item : null; // todo fix this so it doesn't instantiate a new ObjectGuid
+            return EquippedObjects.TryGetValue(new ObjectGuid(objectGuid, this.Location.Variation), out var item) ? item : null; // todo fix this so it doesn't instantiate a new ObjectGuid
         }
 
         /// <summary>

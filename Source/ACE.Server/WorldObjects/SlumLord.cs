@@ -98,7 +98,7 @@ namespace ACE.Server.WorldObjects
                 var ownerId = HouseOwner.Value;
                 var owner = PlayerManager.FindByGuid(ownerId);
 
-                houseProfile.OwnerID = new ObjectGuid(ownerId);
+                houseProfile.OwnerID = new ObjectGuid(ownerId, this.Location.Variation);
                 houseProfile.OwnerName = owner?.Name;
             }
 

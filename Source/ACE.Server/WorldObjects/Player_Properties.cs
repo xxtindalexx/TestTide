@@ -1175,7 +1175,7 @@ namespace ACE.Server.WorldObjects
             else
                 obj.RemoveProperty(prop);
 
-            var msg = new GameMessagePublicUpdateInstanceID(obj, prop, new ObjectGuid(value ?? 0));
+            var msg = new GameMessagePublicUpdateInstanceID(obj, prop, new ObjectGuid(value ?? 0, this.Location.Variation));
 
             SendNetwork(msg, broadcast);
         }

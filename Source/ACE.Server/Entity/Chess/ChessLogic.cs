@@ -601,7 +601,7 @@ namespace ACE.Server.Entity.Chess
                 toPiece = GetPiece(enPassantCoord);
             }
 
-            storage.Add(new ChessMove(result, color, type, from, to, promotion, captured, Move, HalfMove, Castling, EnPassantCoord, fromPiece.Guid, captured != ChessPieceType.Empty ? toPiece.Guid : new ObjectGuid(0)));
+            storage.Add(new ChessMove(result, color, type, from, to, promotion, captured, Move, HalfMove, Castling, EnPassantCoord, fromPiece.Guid, captured != ChessPieceType.Empty ? toPiece.Guid : new ObjectGuid(0, null)));
         }
 
         public ChessMoveResult FinalizeMove(ChessMove move)

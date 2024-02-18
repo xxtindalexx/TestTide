@@ -211,7 +211,7 @@ namespace ACE.Server.WorldObjects
 
         public bool TryRemoveFromInventoryWithNetworking(uint objectGuid, out WorldObject item, RemoveFromInventoryAction removeFromInventoryAction)
         {
-            return TryRemoveFromInventoryWithNetworking(new ObjectGuid(objectGuid), out item, removeFromInventoryAction); // todo fix
+            return TryRemoveFromInventoryWithNetworking(new ObjectGuid(objectGuid, this.Location.Variation), out item, removeFromInventoryAction); // todo fix
         }
 
         public bool TryRemoveFromInventoryWithNetworking(ObjectGuid objectGuid, out WorldObject item, RemoveFromInventoryAction removeFromInventoryAction)
@@ -371,7 +371,7 @@ namespace ACE.Server.WorldObjects
 
         public bool TryDequipObjectWithNetworking(uint objectGuid, out WorldObject item, DequipObjectAction dequipObjectAction)
         {
-            return TryDequipObjectWithNetworking(new ObjectGuid(objectGuid), out item, dequipObjectAction); // todo fix this
+            return TryDequipObjectWithNetworking(new ObjectGuid(objectGuid, this.Location.Variation), out item, dequipObjectAction); // todo fix this
         }
 
         /// <summary>
@@ -483,12 +483,12 @@ namespace ACE.Server.WorldObjects
 
         public WorldObject FindObject(uint objectGuid, SearchLocations searchLocations)
         {
-            return FindObject(new ObjectGuid(objectGuid), searchLocations, out _, out _, out _);
+            return FindObject(new ObjectGuid(objectGuid, this.Location.Variation), searchLocations, out _, out _, out _);
         }
 
         public WorldObject FindObject(uint objectGuid, SearchLocations searchLocations, out Container foundInContainer, out Container rootOwner, out bool wasEquipped)
         {
-            return FindObject(new ObjectGuid(objectGuid), searchLocations, out foundInContainer, out rootOwner, out wasEquipped); // todo Fix this so it's not creating a new ObjectGuid
+            return FindObject(new ObjectGuid(objectGuid, this.Location.Variation), searchLocations, out foundInContainer, out rootOwner, out wasEquipped); // todo Fix this so it's not creating a new ObjectGuid
         }
 
         public WorldObject FindObject(ObjectGuid objectGuid, SearchLocations searchLocations, out Container foundInContainer, out Container rootOwner, out bool wasEquipped)
@@ -534,7 +534,7 @@ namespace ACE.Server.WorldObjects
                 {
                     log.ErrorFormat("Player 0x{0:X8}:{1} tried to find object 0x{2:X8}:{3} in landblock, but landblock is null.", Guid.Full, Name, objectGuid.Full, objectGuid.Type);
                 }
-                result = CurrentLandblock?.GetObject(objectGuid, true, true);
+                result = CurrentLandblock?.GetObject(objectGuid, true);
 
                 if (result != null)
                     return result;
@@ -1482,7 +1482,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }*/
 
-            var item = FindObject(new ObjectGuid(itemGuid), SearchLocations.LocationsICanMove, out var fromContainer, out var rootOwner, out var wasEquipped);
+            var item = FindObject(new ObjectGuid(itemGuid, this.Location.Variation), SearchLocations.LocationsICanMove, out var fromContainer, out var rootOwner, out var wasEquipped);
 
             if (item == null)
             {
@@ -2179,8 +2179,8 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            var stack = FindObject(new ObjectGuid(stackId), SearchLocations.LocationsICanMove, out var stackFoundInContainer, out var stackRootOwner, out _);
-            var container = FindObject(new ObjectGuid(containerId), SearchLocations.MyInventory | SearchLocations.Landblock | SearchLocations.LastUsedContainer, out _, out var containerRootOwner, out _) as Container;
+            var stack = FindObject(new ObjectGuid(stackId, this.Location.Variation), SearchLocations.LocationsICanMove, out var stackFoundInContainer, out var stackRootOwner, out _);
+            var container = FindObject(new ObjectGuid(containerId, this.Location.Variation), SearchLocations.MyInventory | SearchLocations.Landblock | SearchLocations.LastUsedContainer, out _, out var containerRootOwner, out _) as Container;
 
             if (stack == null)
             {
@@ -2411,7 +2411,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            var stack = FindObject(new ObjectGuid(stackId), SearchLocations.MyInventory | SearchLocations.MyEquippedItems, out var stackFoundInContainer, out var stackRootOwner, out _);
+            var stack = FindObject(new ObjectGuid(stackId, this.Location.Variation), SearchLocations.MyInventory | SearchLocations.MyEquippedItems, out var stackFoundInContainer, out var stackRootOwner, out _);
 
             if (stack == null)
             {
@@ -2532,7 +2532,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            var stack = FindObject(new ObjectGuid(stackId), SearchLocations.LocationsICanMove, out var stackFoundInContainer, out var stackRootOwner, out _);
+            var stack = FindObject(new ObjectGuid(stackId, this.Location.Variation), SearchLocations.LocationsICanMove, out var stackFoundInContainer, out var stackRootOwner, out _);
 
             if (stack == null)
             {

@@ -41,7 +41,7 @@ namespace ACE.Server.Network.Structure
             if (house == null) return;
 
             if (house.MonarchId != null)
-                MonarchID = new ObjectGuid(house.MonarchId.Value);      // for allegiance guest/storage access
+                MonarchID = new ObjectGuid(house.MonarchId.Value, null);      // for allegiance guest/storage access
 
             if (house.OpenToEveryone)
                 Bitmask |= HARBitfield.OpenHouse;

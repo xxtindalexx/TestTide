@@ -1014,7 +1014,7 @@ namespace ACE.Server.WorldObjects
 
                     var targetDID = summoned ? targetPortal.OriginalPortal : targetPortal.WeenieClassId;
 
-                    var tiePortal = GetPortal(targetDID.Value);
+                    var tiePortal = GetPortal(targetDID.Value, this.Location.Variation);
 
                     if (tiePortal == null)
                     {
@@ -1054,11 +1054,11 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Returns a Portal object for a WCID
         /// </summary>
-        private static Portal GetPortal(uint wcid)
+        private static Portal GetPortal(uint wcid, int? variationId)
         {
             var weenie = DatabaseManager.World.GetCachedWeenie(wcid);
 
-            return WorldObjectFactory.CreateWorldObject(weenie, new ObjectGuid(wcid)) as Portal;
+            return WorldObjectFactory.CreateWorldObject(weenie, new ObjectGuid(wcid, variationId)) as Portal;
         }
 
         /// <summary>
@@ -1168,7 +1168,7 @@ namespace ACE.Server.WorldObjects
                 else
                 {
                     // portal recall
-                    var portal = GetPortal(recallDID.Value);
+                    var portal = GetPortal(recallDID.Value, this.Location.Variation);
                     if (portal == null || portal.NoRecall)
                     {
                         // You cannot recall that portal!
@@ -1249,7 +1249,7 @@ namespace ACE.Server.WorldObjects
                     return;
                 }
 
-                var summonPortal = GetPortal(portalId);
+                var summonPortal = GetPortal(portalId, this.Location.Variation);
                 if (summonPortal == null || summonPortal.NoSummon || (linkSummoned && !PropertyManager.GetBool("gateway_ties_summonable").Item))
                 {
                     // You cannot summon that portal!
@@ -1295,7 +1295,7 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         protected static bool SummonPortal(uint portalId, Position location, double portalLifetime)
         {
-            var portal = GetPortal(portalId);
+            var portal = GetPortal(portalId, location.Variation);
 
             if (portal == null || location == null)
                 return false;

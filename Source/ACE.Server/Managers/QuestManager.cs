@@ -768,9 +768,9 @@ namespace ACE.Server.Managers
                 {
                     itemTargetWeenie = world.GetRandomEquippableItem();
                 }
-                var itemTargetWorldObject = WorldObjectFactory.CreateWorldObject(itemTargetWeenie, GuidManager.NewDynamicGuid());
+                var itemTargetWorldObject = WorldObjectFactory.CreateWorldObject(itemTargetWeenie, GuidManager.NewDynamicGuid(session.Player.Location.Variation));
 
-                var npcTargetWorldObject = WorldObjectFactory.CreateWorldObject(npcTarget, GuidManager.NewDynamicGuid());
+                var npcTargetWorldObject = WorldObjectFactory.CreateWorldObject(npcTarget, GuidManager.NewDynamicGuid(session.Player.Location.Variation));
 
                 //this forms a basic fetch from NPC quest fashion - check if it should be also a delivery
                 bool chainDelivery = false;
@@ -808,7 +808,7 @@ namespace ACE.Server.Managers
                         {
                             npcDeliveryTarget = world.GetCachedWeenie(28690); //Erik Festus, Ayan
                         }
-                        woDeliveryTarget = WorldObjectFactory.CreateWorldObject(npcDeliveryTarget, GuidManager.NewDynamicGuid());
+                        woDeliveryTarget = WorldObjectFactory.CreateWorldObject(npcDeliveryTarget, GuidManager.NewDynamicGuid(session.Player.Location.Variation));
                         woWeenieDelivery = context.Weenie.Where(x => x.ClassId == npcDeliveryTarget.WeenieClassId).FirstOrDefault();
                         noteMessage += $"Once you've received the {itemTargetWorldObject.Name}, bring it to {woDeliveryTarget.Name}. You will be rewarded handsomely once this has been completed.";
                     }

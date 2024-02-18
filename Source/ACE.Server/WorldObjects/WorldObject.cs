@@ -122,7 +122,7 @@ namespace ACE.Server.WorldObjects
         protected WorldObject(Biota biota)
         {
             Biota = biota;
-            Guid = new ObjectGuid(Biota.Id);
+            Guid = new ObjectGuid(Biota.Id, biota.GetVariation(new System.Threading.ReaderWriterLockSlim()));
 
             biotaOriginatedFromDatabase = true;
 

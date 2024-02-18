@@ -93,7 +93,7 @@ namespace ACE.Server.WorldObjects
             }
 
             InitializePropertyDictionaries();
-            Init(new ObjectGuid(MonarchId.Value));
+            Init(new ObjectGuid(MonarchId.Value, null));
         }
 
         public Allegiance(ObjectGuid monarch)
@@ -297,7 +297,7 @@ namespace ACE.Server.WorldObjects
             if (isLoaded)
             {
                 var loaded = LandblockManager.GetLandblock(landblockId, false, null);
-                return loaded.GetObject(new ObjectGuid(houseGuid)) as House;
+                return loaded.GetObject(new ObjectGuid(houseGuid,null)) as House;
             }
 
             // load an offline copy

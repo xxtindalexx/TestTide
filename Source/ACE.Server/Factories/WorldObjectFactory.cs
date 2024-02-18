@@ -290,7 +290,7 @@ namespace ACE.Server.Factories
                 if (restrict_wcid != null && restrict_wcid.Value != instance.WeenieClassId)
                     continue;
 
-                var guid = new ObjectGuid(instance.Guid);
+                var guid = new ObjectGuid(instance.Guid, variationId);
 
                 WorldObject worldObject;
 
@@ -353,9 +353,9 @@ namespace ACE.Server.Factories
         /// <summary>
         /// This will create a new WorldObject with a new GUID.
         /// </summary>
-        public static WorldObject CreateNewWorldObject(Weenie weenie)
+        public static WorldObject CreateNewWorldObject(Weenie weenie, int? variation = null)
         {
-            var guid = GuidManager.NewDynamicGuid();
+            var guid = GuidManager.NewDynamicGuid(variation);
 
             var worldObject = CreateWorldObject(weenie, guid);
 
@@ -369,38 +369,38 @@ namespace ACE.Server.Factories
         /// This will create a new WorldObject with a new GUID.
         /// It will return null if weenieClassId was not found.
         /// </summary>
-        public static WorldObject CreateNewWorldObject(uint weenieClassId)
+        public static WorldObject CreateNewWorldObject(uint weenieClassId, int? variation = null)
         {
             var weenie = DatabaseManager.World.GetCachedWeenie(weenieClassId);
 
             if (weenie == null)
                 return null;
 
-            return CreateNewWorldObject(weenie);
+            return CreateNewWorldObject(weenie, variation);
         }
 
         /// <summary>
         /// This will create a new WorldObject with a new GUID.
         /// It will return null if weenieClassName was not found.
         /// </summary>
-        public static WorldObject CreateNewWorldObject(string weenieClassName)
+        public static WorldObject CreateNewWorldObject(string weenieClassName, int? variation = null)
         {
             var weenie = DatabaseManager.World.GetCachedWeenie(weenieClassName);
 
             if (weenie == null)
                 return null;
 
-            return CreateNewWorldObject(weenie.WeenieClassId);
+            return CreateNewWorldObject(weenie.WeenieClassId, variation);
         }
 
         /// <summary>
         /// Creates a new WorldObject from a CreateList item
         /// </summary>
-        public static WorldObject CreateNewWorldObject(PropertiesCreateList item)
+        public static WorldObject CreateNewWorldObject(PropertiesCreateList item, int? variation = null)
         {
             var isTreasure = (item.DestinationType & DestinationType.Treasure) != 0;
 
-            var wo = CreateNewWorldObject(item.WeenieClassId);
+            var wo = CreateNewWorldObject(item.WeenieClassId, variation);
 
             if (wo == null) return null;
 

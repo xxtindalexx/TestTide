@@ -647,7 +647,7 @@ namespace ACE.Server.WorldObjects
                 var table = enchantment.HasSpellSetId ? allPossessions : EquippedObjects;
 
                 // if this item is not equipped, remove enchantment
-                if (!table.TryGetValue(new ObjectGuid(enchantment.CasterObjectId), out var item))
+                if (!table.TryGetValue(new ObjectGuid(enchantment.CasterObjectId, this.Location.Variation), out var item))
                 {
                     var spell = new Spell(enchantment.SpellId, false);
                     log.Error($"{Name}.AuditItemSpells(): removing spell {spell.Name} from {(enchantment.HasSpellSetId ? "non-possessed" : "non-equipped")} item");
