@@ -1,3 +1,5 @@
+using System;
+
 namespace ACE.Entity.Enum
 {
     /// <summary>
@@ -135,6 +137,23 @@ namespace ACE.Entity.Enum
         StartDynamicBounty            = 126, //Custom
         PromptAddAugment10            = 127, //Custom
         SetEnvironment                = 128, //Custom
+        InqQuestBonus = 129, //Custom
+        InqItemLevelOpen = 130, //Custom
+        InqItemLevelComplete = 131, //Custom
+        InqItemHasSpellID = 132, //Custom
+        AddMaxItemLevel = 133, //Custom
+        ReduceMaxItemLevel = 134, //Custom
+        RemoveRandomItemSpell = 135, //Custom
+        RemoveItemSpellBySchool = 136, //Custom
+        AddSpellToItem = 137, //Custom
+        IncreaseItemArmorLevel = 138, //Custom
+        IncreaseItemBaseDamage = 139, //Custom
+        IncreaseItemBaseDamageVariance = 140, //Custom
+        IncreaseItemMeleeDefenseBonus = 141, //Custom
+        IncreaseItemMissileDamageBonus = 142, //Custom
+        IncreaseItemMagicDefenseBonus = 143, //Custom
+        IncreaseCleaveOnItem = 144, //Custom
+        IncreaseMultiStrikeOnItem = 145, //Custom
 
         // Unknown Id Emotes & Custom Emotes
         Enlightenment                 = 9001

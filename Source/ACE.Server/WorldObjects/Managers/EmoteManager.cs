@@ -469,6 +469,18 @@ namespace ACE.Server.WorldObjects.Managers
                         }
                     }
                     break;
+                case EmoteType.InqQuestBonus:
+
+                    if (player != null)
+                    {
+                        var bonus = player.QuestCompletionCount ?? 0;
+
+                        if (bonus < emote.Amount64)
+                            ExecuteEmoteSet(EmoteCategory.QuestFailure, emote.Message, targetObject, true);
+                        else
+                            ExecuteEmoteSet(EmoteCategory.QuestSuccess, emote.Message, targetObject, true);
+                    }
+                    break;
 
                 case EmoteType.InqContractsFull:
 

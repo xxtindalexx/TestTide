@@ -642,6 +642,8 @@ namespace ACE.Entity.Enum.Properties
         PortalReqValue                          = 9020,
         [ServerOnly]
         PortalReqMaxValue                       = 9021,
+        [ServerOnly]
+        StoredSpellId = 9022,
 
     }
 
