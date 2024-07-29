@@ -13,6 +13,7 @@ namespace ACE.Entity.Enum
 
         // assumed to have been added to handle some bitfield int properties?
         SetBitsOn               = 8,
-        SetBitsOff              = 9
+        SetBitsOff              = 9,
+        RemoveSpell             = 10,
     };
 }

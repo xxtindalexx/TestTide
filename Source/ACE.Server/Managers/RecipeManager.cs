@@ -1309,6 +1309,15 @@ namespace ACE.Server.Managers
                     modified.Add(targetMod.Guid.Full);
                     if (Debug) Console.WriteLine($"{targetMod.Name}.SetProperty({prop}, 0x{bits:X}) - {op}");
                     break;
+                case ModificationOperation.RemoveSpell:
+                    bool removed = targetMod.Biota.TryRemoveKnownSpell(intMod.Stat, target.BiotaDatabaseLock);
+                    modified.Add(targetMod.Guid.Full);
+                    if (removed)
+                    {   
+                        targetMod.ChangesDetected = true;
+                    }
+                    if (Debug) Console.WriteLine($"{targetMod.Name}.RemoveSpell({prop}, 0x{value:X}) - {op}");
+                    break;
                 default:
                     log.Warn($"RecipeManager.ModifyInt({source.Name}, {target.Name}): unhandled operation {op}");
                     break;
