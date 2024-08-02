@@ -291,6 +291,33 @@ namespace ACE.Database
             return result;
         }
 
+        public virtual CookBook GetCookbook(WorldDbContext context, uint sourceWeenieClassId, int? targetType)
+        {
+                        var result = context.CookBook
+                .Include(r => r.Recipe)
+                .Include(r => r.Recipe.RecipeMod)
+                    .ThenInclude(r => r.RecipeModsBool)
+                .Include(r => r.Recipe.RecipeMod)
+                    .ThenInclude(r => r.RecipeModsDID)
+                .Include(r => r.Recipe.RecipeMod)
+                    .ThenInclude(r => r.RecipeModsFloat)
+                .Include(r => r.Recipe.RecipeMod)
+                    .ThenInclude(r => r.RecipeModsIID)
+                .Include(r => r.Recipe.RecipeMod)
+                    .ThenInclude(r => r.RecipeModsInt)
+                .Include(r => r.Recipe.RecipeMod)
+                    .ThenInclude(r => r.RecipeModsString)
+                .Include(r => r.Recipe.RecipeRequirementsBool)
+                .Include(r => r.Recipe.RecipeRequirementsDID)
+                .Include(r => r.Recipe.RecipeRequirementsFloat)
+                .Include(r => r.Recipe.RecipeRequirementsIID)
+                .Include(r => r.Recipe.RecipeRequirementsInt)
+                .Include(r => r.Recipe.RecipeRequirementsString)
+                .FirstOrDefault(r => r.SourceWCID == sourceWeenieClassId && r.TargetType == targetType);
+
+            return result;
+        }
+
         public virtual List<CookBook> GetAllCookbooks()
         {
             using (var context = new WorldDbContext())
@@ -325,6 +352,16 @@ namespace ACE.Database
                 context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
                 return GetCookbook(context, sourceWeenieClassId, targetWeenieClassId);
+            }
+        }
+
+        public CookBook GetCookbook(uint sourceWeenieClassId, int? targetType)
+        {
+            using (var context = new WorldDbContext())
+            {
+                context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+                return GetCookbook(context, sourceWeenieClassId, targetType);
             }
         }
 

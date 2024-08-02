@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 #nullable disable
@@ -12,6 +12,7 @@ namespace ACE.Database.Models.World
         public uint SourceWCID { get; set; }
         public uint TargetWCID { get; set; }
         public DateTime LastModified { get; set; }
+        public int? TargetType { get; set; }
 
         public virtual Recipe Recipe { get; set; }
     }

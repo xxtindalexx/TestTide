@@ -35,6 +35,10 @@ namespace ACE.Server.Managers
             if (cookbook != null)
                 return cookbook.Recipe;
 
+            cookbook = DatabaseManager.World.GetGeneralCachedCookbookByItemType(source.WeenieClassId, (int?)target.ItemType);
+            if (cookbook != null)
+                return cookbook.Recipe;
+
             // if none exists, try finding new recipe
             return GetNewRecipe(player, source, target);
         }

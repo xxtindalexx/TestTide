@@ -27,7 +27,7 @@ namespace ACE.Database.SQLFormatters.World
 
         public void CreateSQLINSERTStatement(IList<CookBook> input, StreamWriter writer)
         {
-            writer.WriteLine("INSERT INTO `cook_book` (`recipe_Id`, `source_W_C_I_D`, `target_W_C_I_D`, `last_Modified`)");
+            writer.WriteLine("INSERT INTO `cook_book` (`recipe_Id`, `source_W_C_I_D`, `target_W_C_I_D`, `last_Modified`, `target_Type`)");
 
             var lineGenerator = new Func<int, string>(i =>
             {
@@ -39,7 +39,7 @@ namespace ACE.Database.SQLFormatters.World
                 if (WeenieNames != null)
                     WeenieNames.TryGetValue(input[i].TargetWCID, out targetLabel);
 
-                return $"{input[i].RecipeId}, {input[i].SourceWCID} /* {sourceLabel} */, {input[i].TargetWCID.ToString().PadLeft(5)} /* {targetLabel} */, '{input[i].LastModified:yyyy-MM-dd HH:mm:ss}')";
+                return $"{input[i].RecipeId}, {input[i].SourceWCID} /* {sourceLabel} */, {input[i].TargetWCID.ToString().PadLeft(5)} /* {targetLabel} */, '{input[i].LastModified:yyyy-MM-dd HH:mm:ss}', {input[i].TargetType})";
             });
 
             ValuesWriter(input.Count, lineGenerator, writer);

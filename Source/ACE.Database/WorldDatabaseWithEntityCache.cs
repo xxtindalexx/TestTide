@@ -496,6 +496,22 @@ namespace ACE.Database
             return GetCookbook(sourceWeenieClassId, targetWeenieClassId);  // This will add the result into the cache
         }
 
+        public CookBook GetGeneralCachedCookbookByItemType(uint sourceWeenieClassId, int? targetWeenieTypeId)
+        {
+            lock (cookbookCache)
+            {
+                if (cookbookCache.TryGetValue(sourceWeenieClassId, out var recipesForSource))
+                {
+                    foreach (var recipe in recipesForSource.Values.Where(x=>x.TargetType.HasValue))
+                    {
+                        if (targetWeenieTypeId.HasValue && recipe.TargetType == targetWeenieTypeId)
+                            return recipe;
+                    }
+                }
+            }
+            return GetCookbook(sourceWeenieClassId, targetWeenieTypeId);  // This will add the result into the cache
+        }
+
         public Recipe GetCachedRecipe(uint recipeId)
         {
             lock (recipeCache)
