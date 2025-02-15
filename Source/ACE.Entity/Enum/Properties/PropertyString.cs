@@ -95,5 +95,6 @@ namespace ACE.Entity.Enum.Properties
         AllegianceCastellanTitle = 9005,
         GodState = 9006,
         TinkerLog = 9007,
+        IPQuest = 9008,
     }
 }

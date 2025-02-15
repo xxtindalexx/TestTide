@@ -13,6 +13,7 @@ using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Entity;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
+using ACE.Database.Models.Shard;    
 
 namespace ACE.Database
 {
@@ -1257,6 +1258,16 @@ namespace ACE.Database
         public void ClearWieldedTreasureCache()
         {
             cachedWieldedTreasure.Clear();
+        }
+
+        public int? GetQuestIdByName(string questName)
+        {
+            using (var context = new WorldDbContext())
+            {
+                var quest = context.Quest
+                    .FirstOrDefault(q => q.Name.ToLower() == questName.ToLower()); // Case-insensitive match
+                return (int)quest?.Id;
+            }
         }
     }
 }

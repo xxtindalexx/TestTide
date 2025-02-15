@@ -564,12 +564,12 @@ namespace ACE.Server.Managers
             if (issuer != null)
             { 
                 BroadcastToChannel(Channel.Audit, issuer, message, true, true);
-                DiscordChatManager.SendDiscordMessage(issuer.Name, message, ConfigManager.Config.Chat.AdminAuditId);
+                //DiscordChatManager.SendDiscordMessage(issuer.Name, message, ConfigManager.Config.Chat.AdminAuditId);
             }
             else
             {
                 BroadcastToChannelFromConsole(Channel.Audit, message);
-                DiscordChatManager.SendDiscordMessage("Console", message, ConfigManager.Config.Chat.AdminAuditId);
+                //DiscordChatManager.SendDiscordMessage("Console", message, ConfigManager.Config.Chat.AdminAuditId);
             }
                 
 

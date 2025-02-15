@@ -778,12 +778,15 @@ namespace ACE.Server.WorldObjects
             int nonexemptCount = 0;
             var endpoint = this.Session.EndPoint;
             var ipAllowsUnlimited = ConfigManager.Config.Server.Network.AllowUnlimitedSessionsFromIPAddresses.Contains(endpoint.Address.ToString());
-            if(!ipAllowsUnlimited)
+            if (!ipAllowsUnlimited)
             {
                 var players = PlayerManager.GetAllOnline();
                 foreach (var p in players.Where(x => x.Session.EndPoint.Address.Address == endpoint.Address.Address))
                 {
                     if (p.CurrentLandblock != null && Landblock.connectionExemptLandblocks.Contains(p.CurrentLandblock.Id.Landblock))
+                        continue;
+
+                    if (p.IsPlussed)
                         continue;
 
                     if (++nonexemptCount > ConfigManager.Config.Server.Network.MaximumAllowedSessionsPerIPAddress)
@@ -793,7 +796,7 @@ namespace ACE.Server.WorldObjects
                     }
                 }
             }
-            
+
 
             if (CurrentLandblock != null && !CurrentLandblock.CreateWorldObjectsCompleted)
             {

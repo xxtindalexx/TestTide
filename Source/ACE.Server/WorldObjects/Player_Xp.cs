@@ -19,7 +19,7 @@ namespace ACE.Server.WorldObjects
         public const long xp274to275delta = 3390451400;
         public const double levelRatio = 0.014234603;
         public const double questToBonusRation = 0.005;
-        public const double enlightenmentToBonusRatio = 0.1;
+        public const double enlightenmentToBonusRatio = 0.01;
 
         /// <summary>
         /// A player earns XP through natural progression, ie. kills and quests completed
@@ -51,13 +51,17 @@ namespace ACE.Server.WorldObjects
 
             long m_amount = 0;
 
-            if (IsVPHardcore)
+            if (IsVPHardcore && HasVitae)
             {
-                m_amount = (long)Math.Round(amount * enchantment * modifier * quest * enlightenment * hardCoreMult);
+                m_amount = m_amount = (long)Math.Round(amount * modifier);
+            }
+            else if (IsVPHardcore)
+            {
+                m_amount = (long)Math.Round(amount * (1 + (enchantment - 1) + (modifier - 1) + (quest - 1) + (enlightenment - 1)) * hardCoreMult);
             }
             else
             {
-                m_amount = (long)Math.Round(amount * enchantment * modifier * quest * enlightenment);
+                m_amount = (long)Math.Round(amount * (1 + (enchantment - 1) + (modifier - 1) + (quest - 1) + (enlightenment - 1)));
             }
 
             if (m_amount < 0)

@@ -186,5 +186,9 @@ namespace ACE.Entity.Enum.Properties
         FreeMasteryResetRenewed          = 9010,
         ExcludeFromLeaderboards          = 9011,
         IsVPHardcore                     = 9012,
+        CanEnrage                        = 9013,
+        CanGrapple                       = 9014,
+        CanAOE                           = 9015,
+        EnragedHotspot                   = 9016,
     }
 }
