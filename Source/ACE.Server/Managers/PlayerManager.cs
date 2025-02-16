@@ -579,19 +579,52 @@ namespace ACE.Server.Managers
             //LogBroadcastChat(Channel.Audit, issuer, message);
         }
 
-        public static void BroadcastToChannel(Channel channel, Player sender, string message, bool ignoreSquelch = false, bool ignoreActive = false)
+        public static void BroadcastFromDiscord(Channel channel, string senderName, string message)
         {
-            if ((sender.ChannelsActive.HasValue && sender.ChannelsActive.Value.HasFlag(channel)) || ignoreActive)
+            foreach (var player in GetAllOnline().Where(p => (p.ChannelsActive ?? 0).HasFlag(channel)))
+            {
+                player.Session.Network.EnqueueSend(new GameEventChannelBroadcast(
+                    player.Session,
+                    channel,
+                    senderName, // Directly use senderName from Discord
+                    message
+                ));
+            }
+
+            LogBroadcastChat(channel, null, message); // Log without a Player object
+        }
+
+
+        public static void BroadcastToChannel(Channel channel, Player sender, string message, bool ignoreSquelch = false, bool ignoreActive = false, string systemSenderName = null)
+        {
+            if (sender == null)
+            {
+                if (!string.IsNullOrEmpty(systemSenderName))
+                {
+                    // Use systemSenderName if provided
+                    message = $"[{systemSenderName}] {message}";
+                }
+                else
+                {
+                    sender = PlayerManager.GetOnlinePlayer("CONSOLE"); // Fallback to Console
+                }
+            }
+
+            bool canBroadcast = sender == null || ignoreActive ||
+                                (sender.ChannelsActive.HasValue && sender.ChannelsActive.Value.HasFlag(channel));
+
+            if (canBroadcast)
             {
                 foreach (var player in GetAllOnline().Where(p => (p.ChannelsActive ?? 0).HasFlag(channel)))
                 {
                     if (!player.SquelchManager.Squelches.Contains(sender) || ignoreSquelch)
-                        player.Session.Network.EnqueueSend(new GameEventChannelBroadcast(player.Session, channel, sender.Guid == player.Guid ? "" : sender.Name, message));
+                        player.Session.Network.EnqueueSend(new GameEventChannelBroadcast(player.Session, channel, sender?.Guid == player.Guid ? "" : sender?.Name ?? systemSenderName, message));
                 }
-
-                LogBroadcastChat(channel, sender, message);
             }
+
+            LogBroadcastChat(channel, sender ?? null, message);
         }
+
 
         public static void LogBroadcastChat(Channel channel, WorldObject sender, string message)
         {
