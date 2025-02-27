@@ -18,11 +18,12 @@ using ACE.Server.WorldObjects;
 using System.Linq;
 using ACE.Entity.Enum.Properties;
 using ACE.Database.Models.Auth;
-using System.Xml.Linq;
-using Lifestoned.DataModel.DerethForever;
-using MySqlX.XDevAPI.Common;
-using Org.BouncyCastle.Utilities.Net;
-using static System.Net.Mime.MediaTypeNames;
+//using System.Xml.Linq;
+//using Lifestoned.DataModel.DerethForever;
+//using MySqlX.XDevAPI.Common;
+//using Org.BouncyCastle.Utilities.Net;
+//using static System.Net.Mime.MediaTypeNames;
+//using Org.BouncyCastle.Tls;
 //using ACE.Server.Factories;
 //using Org.BouncyCastle.Ocsp;
 //using System.Diagnostics.Metrics;
@@ -776,6 +777,20 @@ namespace ACE.Server.Command.Handlers
 
         }
 
+        [CommandHandler("prestige", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Handles Prestige", "")]
+        public static void HandlePrestige(Session session, params string[] parameters)
+        {
+            if (session.Player.Teleporting || session.Player.TooBusyToRecall || session.Player.IsBusy || session.Player.IsInDeathProcess)
+            {
+                session.Network.EnqueueSend(new GameMessageSystemChat($"Cannot prestige while teleporting or busy. Complete your movement and try again. Neener neener.", ChatMessageType.System));
+                return;
+            }
+            //if(!session.Player.ConfirmationManager.EnqueueSend(new Confirmation_YesNo(session.Player.Guid, session.Player.Guid, "Prestige"), "Are you certain that you'd like to Prestige? You will lose all unspent experience, unspent Luminance not in your bank, and all skills. You will retain all attributes."))
+            //    return;
+            var message = "Are you certain that you'd like to Prestige? You will lose 10 enlightenment levels by doing so.";
+            var confirm = session.Player.ConfirmationManager.EnqueueSend(new Confirmation_Custom(session.Player.Guid, () => Prestige.HandlePrestige(session.Player)), message);
+        }
+
         [CommandHandler("dynamicabandon", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Abandons the most recent dynamic quest", "")]
         public static void AbandonDynamicQuest(Session session, params string[] parameters)
         {
@@ -783,18 +798,36 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("bonus", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Handles Experience Checks", "Leave blank for level, pass first 3 letters of attribute for specific attribute cost")]
-        public static void HandleMultiplier(Session session, params string[] paramters)
+        public static void HandleMultiplier(Session session, params string[] parameters)
         {
             session.Player.QuestCompletionCount = session.Player.Account.GetCharacterQuestCompletions();
             var qb = session.Player.GetQuestCountXPBonus();
             var eq = session.Player.GetXPAndLuminanceModifier(XpType.Kill);
             var en = session.Player.GetEnglightenmentXPBonus();
 
-            session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Your XP multiplier from Quests is: {qb - 1:P}", ChatMessageType.System));
+            // New Prestige Bonuses
+            var prestigeQuestBonus = 1 + (session.Player.PrestigeLevel * 0.05); // +5% per Prestige Level
+            var prestigeEnlightenmentBonus = 1 + (session.Player.PrestigeLevel * 0.025); // +2.5% per Prestige Level
+
+            // Apply Prestige Bonuses to Quest and Enlightenment XP
+            var adjustedQb = qb * prestigeQuestBonus;
+            var adjustedEn = en * prestigeEnlightenmentBonus;
+
+            // Display Individual XP Bonuses
+            session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Your XP multiplier from Quests is: {adjustedQb - 1:P}", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Your XP multiplier from Equipment is: {eq - 1:P}", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Your XP multiplier from Enlightenment is: {en - 1:P}", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Your Total XP multiplier is: {(qb * eq * en) - 1:P}", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Your XP multiplier from Enlightenment is: {adjustedEn - 1:P}", ChatMessageType.System));
+
+            // Display Prestige Bonuses
+            session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Your Prestige Level is: {session.Player.PrestigeLevel}", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Prestige Quest Bonus: {prestigeQuestBonus:F2}x", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Prestige Enlightenment Bonus: {prestigeEnlightenmentBonus:F2}x", ChatMessageType.System));
+
+            // Update Total XP Multiplier Calculation (Additive Model)
+            double totalBonus = (adjustedQb - 1) + (eq - 1) + (adjustedEn - 1);
+            session.Network.EnqueueSend(new GameMessageSystemChat($"[BONUS] Your Total XP multiplier is: {totalBonus:P}", ChatMessageType.System));
         }
+
 
         [CommandHandler("xp", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Handles Experience Checks", "Leave blank for level, pass first 3 letters of attribute for specific attribute cost")]
         public static void HandleExperience(Session session, params string[] parameters)

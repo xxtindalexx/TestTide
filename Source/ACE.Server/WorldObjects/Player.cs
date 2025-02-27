@@ -64,6 +64,9 @@ namespace ACE.Server.WorldObjects
             }
         }
 
+        public double PrestigeQuestMultiplier => 1 + (PrestigeLevel * prestigeToQuestBonus);
+        public double PrestigeEnlightenmentMultiplier => 1 + (PrestigeLevel * prestigeToEnlightenmentBonus);
+
         public DateTime LastJumpTime;
 
         public ACE.Entity.Position LastGroundPos;

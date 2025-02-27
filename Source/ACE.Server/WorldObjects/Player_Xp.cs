@@ -18,9 +18,11 @@ namespace ACE.Server.WorldObjects
         public const long xp275 = 191226310247;
         public const long xp274to275delta = 3390451400;
         public const double levelRatio = 0.014234603;
-        public const double questToBonusRation = 0.005;
-        public const double enlightenmentToBonusRatio = 0.01;
-
+        public const double questToBonusRation = 0.01;
+        public const double enlightenmentToBonusRatio = 0.1;
+        public const double prestigeToQuestBonus = 0.05;
+        public const double prestigeToEnlightenmentBonus = 0.025;
+       
         /// <summary>
         /// A player earns XP through natural progression, ie. kills and quests completed
         /// </summary>
@@ -47,6 +49,8 @@ namespace ACE.Server.WorldObjects
 
             var enlightenment = GetEnglightenmentXPBonus();
 
+            var prestigeQuestBonus = GetPrestigeQuestBonus();
+            var prestigeEnlightenmentBonus = GetPrestigeEnlightenmentBonus();
             var hardCoreMult = 1 + PropertyManager.GetDouble("hardcore_xp_multiplier", 0.05).Item;
 
             long m_amount = 0;
@@ -57,11 +61,11 @@ namespace ACE.Server.WorldObjects
             }
             else if (IsVPHardcore)
             {
-                m_amount = (long)Math.Round(amount * (1 + (enchantment - 1) + (modifier - 1) + (quest - 1) + (enlightenment - 1)) * hardCoreMult);
+                m_amount = (long)Math.Round(amount * (1 + ((quest - 1) * prestigeQuestBonus) + ((enlightenment - 1) * prestigeEnlightenmentBonus) + (modifier - 1) + (enchantment - 1) + (hardCoreMult - 1)));
             }
             else
             {
-                m_amount = (long)Math.Round(amount * (1 + (enchantment - 1) + (modifier - 1) + (quest - 1) + (enlightenment - 1)));
+                m_amount = (long)Math.Round(amount * (1 + ((quest * prestigeQuestBonus) - 1) + ((enlightenment * prestigeEnlightenmentBonus) - 1) + (modifier - 1) + (enchantment - 1)));
             }
 
             if (m_amount < 0)
@@ -627,5 +631,16 @@ namespace ACE.Server.WorldObjects
         {
             return 1 + (this.Enlightenment * enlightenmentToBonusRatio);
         }
+
+        public double GetPrestigeQuestBonus()
+        {
+            return 1 + (this.PrestigeLevel * prestigeToQuestBonus);
+        }
+
+        public double GetPrestigeEnlightenmentBonus()
+        {
+            return 1 + (this.PrestigeLevel * prestigeToEnlightenmentBonus);
+        }
+
     }
 }

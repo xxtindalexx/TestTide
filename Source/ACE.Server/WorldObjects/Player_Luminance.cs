@@ -28,6 +28,8 @@ namespace ACE.Server.WorldObjects
             var enlightenment = GetEnglightenmentXPBonus();
             // should this be passed upstream to fellowship?
             var enchantment = GetXPAndLuminanceModifier(xpType);
+            var prestigeQuestBonus = GetPrestigeQuestBonus();
+            var prestigeEnlightenmentBonus = GetPrestigeEnlightenmentBonus();
             long m_amount = 0;
             if (IsVPHardcore && HasVitae)
             {
@@ -35,12 +37,12 @@ namespace ACE.Server.WorldObjects
             }
             else if (IsVPHardcore)
             {
-                m_amount = (long)Math.Round(amount * quest * enlightenment * enchantment * modifier * hardCoreMult);
+                m_amount = (long)Math.Round(amount * (1 + ((quest - 1) * prestigeQuestBonus) + ((enlightenment - 1) * prestigeEnlightenmentBonus) + (modifier - 1) + (enchantment - 1) + (hardCoreMult - 1)));
             }
             else
             {
-                m_amount = (long)Math.Round(amount * quest * enlightenment * enchantment * modifier);
-            }           
+                m_amount = (long)Math.Round(amount * (1 + ((quest * prestigeQuestBonus) - 1) + ((enlightenment * prestigeEnlightenmentBonus) - 1) + (modifier - 1) + (enchantment - 1)));
+            }
 
             GrantLuminance(m_amount, xpType, shareType);
         }

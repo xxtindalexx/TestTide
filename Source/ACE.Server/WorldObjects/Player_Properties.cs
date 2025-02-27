@@ -1480,5 +1480,11 @@ namespace ACE.Server.WorldObjects
             set { if (!value) RemoveProperty(PropertyBool.IsVPHardcore); else SetProperty(PropertyBool.IsVPHardcore, value); }
         }
 
+        public int PrestigeLevel
+        {
+            get => GetProperty(PropertyInt.PrestigeLevel) ?? 0;
+            set { if (value == 0) RemoveProperty(PropertyInt.PrestigeLevel); else SetProperty(PropertyInt.PrestigeLevel, value); }
+        }
+
     }
 }
