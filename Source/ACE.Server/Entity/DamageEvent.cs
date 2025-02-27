@@ -219,7 +219,7 @@ namespace ACE.Server.Entity
             {
                 var enrageMultiplier = attacker.EnrageDamageMultiplier ?? 0.0f;
                 BaseDamage *= enrageMultiplier;
-                Console.WriteLine($"[DEBUG] Mob Attacker Enrage Multiplier Applied: {enrageMultiplier}, Updated Base Damage: {BaseDamage}");
+                //Console.WriteLine($"[DEBUG] Mob Attacker Enrage Multiplier Applied: {enrageMultiplier}, Updated Base Damage: {BaseDamage}");
             }
 
             if (DamageType == DamageType.Undef)
@@ -268,14 +268,48 @@ namespace ACE.Server.Entity
             // damage before mitigation
             DamageBeforeMitigation = BaseDamage * AttributeMod * PowerMod * SlayerMod * DamageRatingMod;
 
-            Console.WriteLine($"[DEBUG] Damage Before Mitigation: {DamageBeforeMitigation}");
+            //Console.WriteLine($"[DEBUG] Damage Before Mitigation: {DamageBeforeMitigation}");
+
+            // If this is a PvP battle, apply augmentation reduction for melee and missile only
+            if (pkBattle) // PvP Battle Detected
+            {
+                // Define scaling factors
+                float meleeAugScale = 0.0010f;   // Melee aug reduction scaling
+                float missileAugScale = 0.0010f; // Missile aug reduction scaling
+
+                // Retrieve augmentation values
+                float meleeAug = playerAttacker.LuminanceAugmentMeleeCount ?? 0;
+                float missileAug = playerAttacker.LuminanceAugmentMissileCount ?? 0;
+
+                // Calculate individual reductions
+                float meleeReduction = Math.Min(meleeAug * meleeAugScale, 0.95f);   // Max 80% reduction
+                float missileReduction = Math.Min(missileAug * missileAugScale, 0.95f); // Max 80% reduction
+
+                float reductionFactor = 1.0f; // Default (no reduction)
+
+                // **Determine attack type**
+                if (CombatType == CombatType.Melee)
+                    reductionFactor = 1.0f - meleeReduction;
+                else if (CombatType == CombatType.Missile)
+                    reductionFactor = 1.0f - missileReduction;
+
+                // Prevent reduction factor from going below 0.2 (no more than 80% total reduction)
+                reductionFactor = Math.Max(reductionFactor, 0.05f);
+
+                // Apply the adjusted reduction factor to damage
+                DamageBeforeMitigation *= reductionFactor;
+
+                // Debugging Output
+                Console.WriteLine($"[DEBUG] PvP Reduction Applied! AttackType: {CombatType}, Reduction Factor: {reductionFactor:F2}, New Damage: {DamageBeforeMitigation:F2}");
+            }
+
 
             // NEW: Apply enrage damage reduction if the defender is a mob and enraged
             if (defender.IsEnraged && !(defender is Player))
             {
                 var damageReduction = defender.EnrageDamageReduction ?? 0.0f; // Default to no reduction
                 DamageBeforeMitigation *= (1.0f - damageReduction);
-                Console.WriteLine($"[DEBUG] Mob Defender Enrage Damage Reduction Applied: {damageReduction * 100}%, Reduced Damage: {DamageBeforeMitigation}");
+                //Console.WriteLine($"[DEBUG] Mob Defender Enrage Damage Reduction Applied: {damageReduction * 100}%, Reduced Damage: {DamageBeforeMitigation}");
             }
 
             // critical hit?
@@ -322,24 +356,69 @@ namespace ACE.Server.Entity
                     // Update the CriticalDamageMod to include luminance augment bonus
                     CriticalDamageMod = 1.0f + WorldObject.GetWeaponCritDamageMod(Weapon, attacker, attackSkill, defender) + luminanceAugmentBonus;
 
-                    // NEW: Apply enrage multiplier if attacker is a mob and enraged
-                    if (attacker.IsEnraged && !(attacker is Player))
+                    // **NEW: Apply PvP Augment Reduction for Critical Hits BEFORE Crit Multiplier**
+                    if (pkBattle) // PvP Battle Detected
                     {
-                        CriticalDamageMod *= attacker.EnrageDamageMultiplier ?? 1.0f;
-                        Console.WriteLine($"[DEBUG] CriticalDamageMod After Mob Attacker Enrage Multiplier: {CriticalDamageMod}");
+                        float meleeAugScale = 0.0010f;   // Melee aug reduction scaling
+                        float missileAugScale = 0.0010f; // Missile aug reduction scaling
+
+                        // Retrieve augmentation values
+                        float meleeAug = playerAttacker.LuminanceAugmentMeleeCount ?? 0;
+                        float missileAug = playerAttacker.LuminanceAugmentMissileCount ?? 0;
+
+                        // Calculate individual reductions
+                        float meleeReduction = Math.Min(meleeAug * meleeAugScale, 0.95f);   // Max 95% reduction
+                        float missileReduction = Math.Min(missileAug * missileAugScale, 0.95f); // Max 95% reduction
+
+                        float reductionFactor = 1.0f; // Default (no reduction)
+
+                        // **Determine attack type**
+                        if (CombatType == CombatType.Melee)
+                            reductionFactor = 1.0f - meleeReduction;
+                        else if (CombatType == CombatType.Missile)
+                            reductionFactor = 1.0f - missileReduction;
+
+                        // Prevent reduction factor from going below 0.10 (no more than 90% total reduction)
+                        reductionFactor = Math.Max(reductionFactor, 0.10f);
+
+                        // **Apply PvP Reduction BEFORE Critical Multiplier**
+                        DamageBeforeMitigation *= reductionFactor;
+
+                        // Debugging Output
+                        Console.WriteLine($"[DEBUG] PvP Reduction Applied for Crit! AttackType: {CombatType}, Reduction Factor: {reductionFactor:F2}, Pre-Critical Damage: {DamageBeforeMitigation:F2}");
                     }
 
-                    // Calculate damage before mitigation
-                    DamageBeforeMitigation = BaseDamageMod.MaxDamage * AttributeMod * PowerMod * SlayerMod * DamageRatingMod * CriticalDamageMod;
+                    // **NOW Apply Critical Multiplier AFTER PvP Reduction**
+                    float critMultiplier = CriticalDamageMod;
 
-                    Console.WriteLine($"[DEBUG] Damage Before Mitigation (Critical): {DamageBeforeMitigation}");
+                    // **Fix: Lower PvP Crit Multiplier Cap Further**
+                    if (pkBattle) // PvP Specific Crit Scaling
+                    {
+                        if (CombatType == CombatType.Melee)
+                            critMultiplier = Math.Min(critMultiplier, 0.75f);  // **Melee crits capped at 1.15x**
+                        else if (CombatType == CombatType.Missile)
+                            critMultiplier = Math.Min(critMultiplier, 1.1f); // **Missile crits slightly stronger**
+                    }
+
+                    // **Apply Critical Multiplier NOW**
+                    DamageBeforeMitigation *= critMultiplier;
+
+                    // **Extra PvP Crit Damage Scaling**
+                    float pvpCritScalingFactor = 0.60f; // **Reduce PvP crits by 40%**
+                    DamageBeforeMitigation *= pvpCritScalingFactor;
+
+                    // **Hard Cap Final PvP Crit Damage to 2x Normal Hit**
+                    float maxCritDamageCap = 0.75f * (DamageBeforeMitigation / critMultiplier); // **Ensures crits are ~2x normal hits max**
+                    DamageBeforeMitigation = Math.Min(DamageBeforeMitigation, maxCritDamageCap);
+
+                    Console.WriteLine($"[DEBUG] Damage Before Mitigation (Critical, After PvP Reduction): {DamageBeforeMitigation}");
 
                     // Apply enrage damage reduction if defender is the mob and enraged
                     if (defender.IsEnraged && !(defender is Player))
                     {
                         var damageReduction = defender.EnrageDamageReduction ?? 0.0f; // Default to no reduction
                         DamageBeforeMitigation *= (1.0f - damageReduction); // Reduce critical hit damage
-                        Console.WriteLine($"[DEBUG] Mob Defender Enrage Damage Reduction Applied: {damageReduction * 100}%, Final Damage Before Mitigation: {DamageBeforeMitigation}");
+                        //Console.WriteLine($"[DEBUG] Mob Defender Enrage Damage Reduction Applied: {damageReduction * 100}%, Final Damage Before Mitigation: {DamageBeforeMitigation}");
                     }
 
                     CriticalDamageRatingMod = Creature.GetPositiveRatingMod(attacker.GetCritDamageRating());
@@ -351,7 +430,7 @@ namespace ACE.Server.Entity
                     if (pkBattle)
                         DamageRatingMod = Creature.AdditiveCombine(DamageRatingMod, PkDamageMod);
 
-                    DamageBeforeMitigation = BaseDamageMod.MaxDamage * AttributeMod * PowerMod * SlayerMod * DamageRatingMod * CriticalDamageMod;
+                    DamageBeforeMitigation = BaseDamageMod.MaxDamage * AttributeMod * PowerMod * SlayerMod * DamageRatingMod;
                 }
             }
 
@@ -436,12 +515,12 @@ namespace ACE.Server.Entity
             {
                 var damageReduction = defender.EnrageDamageReduction ?? 0.0f; // Default to no reduction
                 Damage *= (1.0f - damageReduction); // Apply reduction (e.g., 0.5 = 50% reduction)
-                Console.WriteLine($"[DEBUG] Final Mob Defender Enrage Damage Reduction Applied: {damageReduction * 100}%, Final Damage: {Damage}");
+                //Console.WriteLine($"[DEBUG] Final Mob Defender Enrage Damage Reduction Applied: {damageReduction * 100}%, Final Damage: {Damage}");
             }
 
             DamageMitigated = DamageBeforeMitigation - Damage;
 
-            Console.WriteLine($"[DEBUG] Final Damage: {Damage}");
+            //Console.WriteLine($"[DEBUG] Final Damage: {Damage}");
             return Damage;
         }
 
