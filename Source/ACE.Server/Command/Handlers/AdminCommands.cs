@@ -2361,6 +2361,12 @@ namespace ACE.Server.Command.Handlers
                 return null;
             }
 
+            if (weenie.DisableCreate())
+            {
+                session.Network.EnqueueSend(new GameMessageSystemChat($"You cannot spawn {weenie.ClassName} because it is restricted", ChatMessageType.Broadcast));
+                return null;
+            }
+
             return weenie;
         }
 
@@ -4882,6 +4888,21 @@ namespace ACE.Server.Command.Handlers
             DiscordChatManager.SendDiscordMessage("", msg, ConfigManager.Config.Chat.GeneralChannelId);
             DiscordChatManager.SendDiscordMessage("", msg, ConfigManager.Config.Chat.EventsChannelId);
             DiscordChatManager.SendDiscordMessage("", msg, ConfigManager.Config.Chat.RaffleChannelId);
+        }
+
+        [CommandHandler("serverquestcompletions", AccessLevel.Developer, CommandHandlerFlag.None, "Get Total Completions of a Quest for all Characters")]
+        public static void HandleServerQuestCompletions(Session session, params string[] parameters)
+        {
+            if (parameters.Length > 0)
+            {
+                var questName = parameters[0];
+                var completions = DatabaseManager.Shard.BaseDatabase.GetServerQuestCompletions(questName);
+                session.Player.SendMessage($"The quest {questName} has been completed {completions} times.");
+            }
+            else
+            {
+                session.Player.SendMessage($"You must specify a quest name.");
+            }
         }
     }
 }
