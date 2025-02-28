@@ -1394,6 +1394,9 @@ namespace ACE.Server.Command.Handlers
 
             foreach (var item in objects)
             {
+                // Don't list objects the player can't see
+                if (item.Visibility && !session.Player.Adminvision)
+                    continue;
                 session.Network.EnqueueSend(new GameMessageSystemChat($"{item.Name}, {item.Guid}, {item.Location}", ChatMessageType.Broadcast));
             }
         }
