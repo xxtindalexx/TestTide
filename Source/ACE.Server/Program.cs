@@ -15,6 +15,7 @@ using ACE.Server.Command;
 using ACE.Server.Managers;
 using ACE.Server.Network.Managers;
 using ACE.Server.Mods;
+using ACE.Server.WorldObjects;
 
 namespace ACE.Server
 {
@@ -262,6 +263,10 @@ namespace ACE.Server
 
             log.Info("Initializing GuidManager...");
             GuidManager.Initialize();
+
+            log.Info("Initializing AuctionHouse...");
+            AuctionHouse.LoadAuctionsFromDB();
+            AuctionHouse.LoadPendingReturnsFromDB();
 
             
             if (!string.IsNullOrEmpty(ConfigManager.Config.Chat.DiscordToken))

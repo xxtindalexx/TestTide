@@ -28,6 +28,11 @@ using ACE.Server.WorldObjects.Managers;
 
 using Character = ACE.Database.Models.Shard.Character;
 using MotionTable = ACE.DatLoader.FileTypes.MotionTable;
+using System.Linq;
+using System.Runtime.Serialization;
+using ACE.Server.Physics.Managers;
+using ACE.Server.Network.Managers;
+using ACE.Server.Factories;
 
 namespace ACE.Server.WorldObjects
 {
@@ -1214,6 +1219,125 @@ namespace ACE.Server.WorldObjects
                 innerChain.EnqueueChain();
             });
             actionChain.EnqueueChain();
+        }
+
+        public bool TryRemoveItemForAuction(WorldObject item)
+        {
+            if (item.GetProperty(PropertyInt.Attuned) > 0)
+            {
+                SendMessage($"[AUCTION ERROR] You cannot list {item.NameWithMaterial} for auction because it is attuned.");
+                return false;
+            }
+            //Console.WriteLine($"[AUCTION DEBUG] Attempting to remove {item.NameWithMaterial} ({item.Guid.Full}) from inventory for auction...");
+
+            // 🔍 **Check if the item exists before removal**
+            bool existsBefore = this.Inventory.ContainsKey(item.Guid);
+            //Console.WriteLine($"[AUCTION DEBUG] Item exists before removal? {existsBefore}");
+
+            // 🚀 **Try to remove the item from inventory using networking**
+            bool removed = TryRemoveFromInventoryWithNetworking(item.Guid, out _, RemoveFromInventoryAction.ConsumeItem);
+
+            if (removed)
+            {
+                //Console.WriteLine($"[AUCTION DEBUG] Item {item.NameWithMaterial} successfully removed.");
+
+                // 🔄 **Force database sync before destroying the object**
+                DeepSave(item);  // <------ This ensures database persistence
+
+                // 🔥 **Explicitly Destroy the Object**
+               // item.Destroy();
+               // Console.WriteLine($"[AUCTION DEBUG] Destroyed {item.NameWithMaterial}.");
+
+                // 🚨 **Force Client Inventory Update**
+                Session.Network.EnqueueSend(new GameEventViewContents(Session, this)); // Refresh inventory view
+
+                // 🚀 **Final Existence Check**
+                bool existsAfterDestroy = this.Inventory.ContainsKey(item.Guid);
+                //Console.WriteLine($"[AUCTION DEBUG] Item exists after destroy? {existsAfterDestroy}");
+
+                if (!existsAfterDestroy)
+                {
+                   // SendMessage($"[DEBUG] Successfully listed {item.NameWithMaterial} for auction.");
+                    return true;
+                }
+                else
+                {
+                    //Console.WriteLine($"[AUCTION ERROR] Ghost item detected after removal! Investigate.");
+                }
+            }
+
+            //Console.WriteLine($"[AUCTION ERROR] Failed to remove {item.Name} ({item.Guid.Full}) from inventory.");
+            return false;
+        }
+
+        public static void CheckForPendingAuctionRefunds(Player player)
+        {
+            using (var context = new ACE.Database.Models.Shard.ShardDbContext())
+            {
+                //Console.WriteLine($"[AUCTION] Checking for pending auction refunds for {player.Name} (GUID: {player.Guid.Full})...");
+
+                var refunds = context.AuctionRefunds
+                    .Where(r => r.BidderGuid == player.Guid.Full)
+                    .ToList();
+
+                if (!refunds.Any())
+                {
+                   // Console.WriteLine("[AUCTION] No pending auction refunds.");
+                    return;
+                }
+
+                int totalRefund = refunds.Sum(r => r.RefundedAmount);
+                player.BankedEnlightenedCoins += totalRefund;
+
+                player.SendMessage($"[AUCTION] You have been refunded {totalRefund} Enlightened Coins from canceled auctions.");
+               // Console.WriteLine($"[AUCTION] {player.Name} received {totalRefund} EC refund upon login.");
+
+                // **Remove refunded entries**
+                context.AuctionRefunds.RemoveRange(refunds);
+                context.SaveChanges();
+            }
+        }
+
+        public static void CheckForPendingAuctionPayments(Player player)
+        {
+            using (var context = new ACE.Database.Models.Shard.ShardDbContext())
+            {
+               // Console.WriteLine($"[AUCTION] Checking for pending auction payments for {player.Name} (GUID: {player.Guid.Full})...");
+
+                var pendingPayments = context.AuctionPayments
+                    .Where(p => p.SellerGuid == player.Guid.Full)
+                    .ToList();
+
+                if (!pendingPayments.Any())
+                {
+                  //  Console.WriteLine("[AUCTION] No pending auction payments.");
+                    return;
+                }
+
+                int totalPayment = pendingPayments.Sum(p => p.Amount);
+                player.BankedEnlightenedCoins += totalPayment;
+
+                player.SendMessage($"[AUCTION] You have received {totalPayment} Enlightened Coins from completed auctions.");
+               // Console.WriteLine($"[AUCTION] {player.Name} received {totalPayment} EC from stored auction payments.");
+
+                context.AuctionPayments.RemoveRange(pendingPayments);
+                context.SaveChanges();
+            }
+        }
+
+        public static void DeliverPendingAuctionReturnsOnLogin(Player player)
+        {
+            using (var context = new ACE.Database.Models.Shard.ShardDbContext())
+            {
+                var pendingReturns = context.AuctionReturns.Where(r => r.SellerGuid == player.Guid.Full).ToList();
+
+                if (!pendingReturns.Any())
+                    return;
+
+                player.SendMessage($"[AUCTION] You have {pendingReturns.Count} expired auction item(s) to retrieve. Use /auction retrieve.");
+
+               // Console.WriteLine($"[AUCTION] {player.Name} has {pendingReturns.Count} pending auction items.");
+            }
         }
     }
 }

@@ -166,6 +166,42 @@ namespace ACE.Server.WorldObjects
             return true;
         }
 
+        public bool TryRemoveItemByGuidWithNetworking(ObjectGuid itemGuid, out WorldObject removedItem, RemoveFromInventoryAction action = RemoveFromInventoryAction.SellItem)
+        {
+            removedItem = null;
+
+            if (TryRemoveFromInventoryWithNetworking(itemGuid, out removedItem, action))
+            {
+                SendMessage($"[AUCTION LISTED] Successfully removed {removedItem.Name} from inventory.");
+                return true;
+            }
+
+            SendMessage($"[AUCTION ERROR] Failed to remove item with GUID {itemGuid.Full} from inventory.");
+            return false;
+        }
+
+        public bool TryAddItemByGuidWithNetworking(ObjectGuid itemGuid, out WorldObject addedItem)
+        {
+            // ✅ Step 2: Attempt to load the item from the database
+                addedItem = AuctionHouse.FindWorldObject(itemGuid.Full);
+
+                if (addedItem == null)
+                {
+                    SendMessage($"[AUCTION ERROR] Failed to locate item with GUID {itemGuid.Full}.");
+                    return false;
+                }
+
+            // ✅ Step 3: Try adding the item to the player's inventory
+            if (!TryCreateInInventoryWithNetworking(addedItem))
+            {
+                SendMessage($"[AUCTION ERROR] Your inventory is full! Unable to retrieve {addedItem.NameWithMaterial}.");
+                return false;
+            }
+
+            SendMessage($"[AUCTION RETRIEVAL] Successfully retrieved {addedItem.NameWithMaterial}.");
+            return true;
+        }
+
         private void DeepSave(WorldObject item)
         {
             var biotas = new Collection<(Biota biota, ReaderWriterLockSlim rwLock)>();

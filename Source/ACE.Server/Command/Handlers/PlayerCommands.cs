@@ -18,6 +18,7 @@ using ACE.Server.WorldObjects;
 using System.Linq;
 using ACE.Entity.Enum.Properties;
 using ACE.Database.Models.Auth;
+using static ACE.Server.WorldObjects.Player;
 //using System.Xml.Linq;
 //using Lifestoned.DataModel.DerethForever;
 //using MySqlX.XDevAPI.Common;
@@ -623,6 +624,118 @@ namespace ACE.Server.Command.Handlers
             }
         }
 
+        [CommandHandler("auction", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Auction House commands",
+"list | sell <minBid> <buyoutPrice> <time> | bid <id> <amount> | buyout <id> | preview <id> | retrieve | cancel <id>")]
+        public static void HandleAuctionCommand(Session session, params string[] parameters)
+        {
+            if (parameters.Length == 0)
+            {
+                session.Player.SendMessage("Usage: /auction list | sell <minBid> <buyoutPrice> <time> | bid <id> <amount> | buyout <id> | preview <id> | retrieve | cancel <id>");
+                return;
+            }
+
+            switch (parameters[0].ToLower())
+            {
+                case "list":
+                    session.Player.SendMessage(AuctionHouse.ListActiveAuctions());
+                    break;
+
+                case "sell":
+                    if (parameters.Length < 4)
+                    {
+                        session.Player.SendMessage("Usage: /auction sell <minBid> <buyoutPrice> <time>");
+                        return;
+                    }
+
+                    if (!int.TryParse(parameters[1], out int minBid) ||
+                        !int.TryParse(parameters[2], out int buyoutPrice) ||
+                        !int.TryParse(parameters[3], out int duration))
+                    {
+                        session.Player.SendMessage("Invalid parameters. Ensure minBid, buyoutPrice, and time are numbers.");
+                        return;
+                    }
+
+                    var selectedItemId = session.Player.CurrentAppraisalTarget;
+                    if (selectedItemId == null)
+                    {
+                        session.Player.SendMessage("You must have an item targeted to list it in the auction.");
+                        return;
+                    }
+
+                    // Convert item ID to actual WorldObject
+                    var selectedItem = session.Player.FindObject((uint)selectedItemId, SearchLocations.Everywhere);
+                    if (selectedItem == null)
+                    {
+                        session.Player.SendMessage("The selected item could not be found in your inventory.");
+                        return;
+                    }
+
+                    // Use our new remove function
+                    if (!session.Player.TryRemoveItemForAuction(selectedItem))
+                    {
+                        session.Player.SendMessage("Failed to remove item from inventory. Ensure it is not equipped or in trade.");
+                        return;
+                    }
+
+                    AuctionHouse.ListAuction(session.Player, selectedItem, minBid, buyoutPrice, duration);
+                    break;
+
+                case "bid":
+                    if (parameters.Length < 3)
+                    {
+                        session.Player.SendMessage("Usage: /auction bid <id> <amount>");
+                        return;
+                    }
+
+                    if (!int.TryParse(parameters[1], out int auctionId) || !int.TryParse(parameters[2], out int bidAmount))
+                    {
+                        session.Player.SendMessage("Invalid parameters. Ensure auctionId and amount are numbers.");
+                        return;
+                    }
+
+                    AuctionHouse.PlaceBid(session.Player, auctionId, bidAmount);
+                    break;
+
+                case "buyout":
+                    if (parameters.Length < 2 || !int.TryParse(parameters[1], out int buyoutId))
+                    {
+                        session.Player.SendMessage("Usage: /auction buyout <id>");
+                        return;
+                    }
+
+                    AuctionHouse.BuyoutItem(session.Player, buyoutId);
+                    break;
+
+                case "preview":
+                    if (parameters.Length < 2 || !int.TryParse(parameters[1], out int previewId))
+                    {
+                        session.Player.SendMessage("Usage: /auction preview <id>");
+                        return;
+                    }
+
+                    AuctionHouse.PreviewAuctionItem(session.Player, previewId);
+                    break;
+
+                case "retrieve":
+                    AuctionHouse.RetrieveAuctionReturns(session.Player);
+                    break;
+
+                    case "cancel":
+                        if (parameters.Length < 2 || !int.TryParse(parameters[1], out int cancelId))
+                    {
+                            session.Player.SendMessage("Usage: /auction cancel <id>");
+                            return;
+                        }
+
+                        AuctionHouse.CancelAuction(session.Player, cancelId);
+                        break;
+
+                default:
+                    session.Player.SendMessage("Invalid auction command. Use: list | sell | bid | buyout | preview | retrieve | cancel.");
+                    break;
+            }
+        }
+
         [CommandHandler("clap", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 1, "Deposit Enlightened Coins and Weakly Enlightened Coins using items from your pack. It will take the lower of the Red Coalesced Aetheria/Red Chunks/Empyrean Trinket and Blue Coalesced Aetheria/Blue Chunks/Falatacot (including powders) and deposit that amount.", "Usage: /clap all")]
         public static void HandleClap(Session session, params string[] parameters)
         {
@@ -1096,7 +1209,7 @@ namespace ACE.Server.Command.Handlers
                     list = cache.GetTopQB(context);
                     if (list.Count > 0)
                     {
-                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 25 Players by Quest Bonus:", ChatMessageType.Broadcast));
+                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 50 Players by Quest Bonus:", ChatMessageType.Broadcast));
                     }
                 }
 
@@ -1105,7 +1218,7 @@ namespace ACE.Server.Command.Handlers
                     list = cache.GetTopLevel(context);
                     if (list.Count > 0)
                     {
-                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 25 Players by Level:", ChatMessageType.Broadcast));
+                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 50 Players by Level:", ChatMessageType.Broadcast));
                     }
                 }
 
@@ -1114,7 +1227,7 @@ namespace ACE.Server.Command.Handlers
                     list = cache.GetTopEnl(context);
                     if (list.Count > 0)
                     {
-                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 25 Players by Enlightenment:", ChatMessageType.Broadcast));
+                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 50 Players by Enlightenment:", ChatMessageType.Broadcast));
                     }
                 }
 
@@ -1123,7 +1236,7 @@ namespace ACE.Server.Command.Handlers
                     list = cache.GetTopTitle(context);
                     if (list.Count > 0)
                     {
-                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 25 Players by Titles:", ChatMessageType.Broadcast));
+                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 50 Players by Titles:", ChatMessageType.Broadcast));
                     }
                 }
 
@@ -1132,7 +1245,7 @@ namespace ACE.Server.Command.Handlers
                     list = cache.GetTopAugs(context);
                     if (list.Count > 0)
                     {
-                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 25 Players by Advanced Augmentations:", ChatMessageType.Broadcast));
+                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 50 Players by Advanced Augmentations:", ChatMessageType.Broadcast));
                     }
                 }
 
@@ -1141,7 +1254,7 @@ namespace ACE.Server.Command.Handlers
                     list = cache.GetTopDeaths(context);
                     if (list.Count > 0)
                     {
-                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 25 Players by Deaths:", ChatMessageType.Broadcast));
+                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 50 Players by Deaths:", ChatMessageType.Broadcast));
                     }
                 }
 
@@ -1150,7 +1263,7 @@ namespace ACE.Server.Command.Handlers
                     list = cache.GetTopBank(context);
                     if (list.Count > 0)
                     {
-                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 25 Players by Bank Value:", ChatMessageType.Broadcast));
+                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 50 Players by Bank Value:", ChatMessageType.Broadcast));
                     }
                 }
 
@@ -1159,7 +1272,7 @@ namespace ACE.Server.Command.Handlers
                     list = cache.GetTopLum(context);
                     if (list.Count > 0)
                     {
-                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 25 Players by Banked Luminance:", ChatMessageType.Broadcast));
+                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 50 Players by Banked Luminance:", ChatMessageType.Broadcast));
                     }
                 }
 
@@ -1168,7 +1281,7 @@ namespace ACE.Server.Command.Handlers
                     list = cache.GetTopAttr(context);
                     if (list.Count > 0)
                     {
-                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 25 Players by Raised Attributes:", ChatMessageType.Broadcast));
+                        session.Network.EnqueueSend(new GameMessageSystemChat("Top 50 Players by Raised Attributes:", ChatMessageType.Broadcast));
                     }
                 }
 

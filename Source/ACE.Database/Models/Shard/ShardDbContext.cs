@@ -59,6 +59,11 @@ namespace ACE.Database.Models.Shard
         public virtual DbSet<ConfigPropertiesString> ConfigPropertiesString { get; set; }
         public virtual DbSet<HousePermission> HousePermission { get; set; }
         public virtual DbSet<QuestIpTracking> QuestIpTracking { get; set; }
+        public virtual DbSet<AuctionEntry> AuctionEntries { get; set; }
+        public virtual DbSet<AuctionReturnEntry> AuctionReturns { get; set; }
+        public virtual DbSet<AuctionRefundEntry> AuctionRefunds { get; set; }
+        public virtual DbSet<AuctionPaymentEntry> AuctionPayments { get; set; }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -1589,6 +1594,124 @@ namespace ACE.Database.Models.Shard
                       .HasForeignKey(e => e.QuestId)
                       .OnDelete(DeleteBehavior.Cascade)
                       .HasConstraintName("quest_ip_tracking_ibfk_1");
+            });
+
+            modelBuilder.Entity<AuctionEntry>(entity =>
+            {
+                entity.ToTable("auction_house"); // Database table name
+
+                entity.HasKey(e => e.Id); // Primary key
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("id")
+                      .IsRequired()
+                      .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.ItemGuid)
+                      .HasColumnName("item_guid")
+                      .IsRequired();
+
+                entity.Property(e => e.SellerGuid)
+                      .HasColumnName("seller_guid")
+                      .IsRequired();
+
+                entity.Property(e => e.BuyerGuid)
+                      .HasColumnName("buyer_guid");
+
+                entity.Property(e => e.MinBid)
+                      .HasColumnName("min_bid")
+                      .IsRequired();
+
+                entity.Property(e => e.BuyoutPrice)
+                      .HasColumnName("buyout_price");
+
+                entity.Property(e => e.HighestBid)
+                      .HasColumnName("highest_bid")
+                      .IsRequired();
+
+                entity.Property(e => e.DurationSeconds)
+                      .HasColumnName("duration_seconds")
+                      .IsRequired();
+
+                entity.Property(e => e.StartTime)
+                      .HasColumnName("start_time")
+                      .IsRequired();
+            });
+
+            modelBuilder.Entity<AuctionReturnEntry>(entity =>
+            {
+                entity.ToTable("auction_returns"); // Database table name
+
+                entity.HasKey(e => e.Id); // Primary key
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("id")
+                      .IsRequired()
+                      .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.SellerGuid)
+                      .HasColumnName("seller_guid")
+                      .IsRequired();
+
+                entity.Property(e => e.BuyerGuid)
+                      .HasColumnName("buyer_guid")
+                      .IsRequired();
+
+                entity.Property(e => e.ItemGuid)
+                      .HasColumnName("item_guid")
+                      .IsRequired();
+
+                entity.Property(e => e.ReturnDate)
+                      .HasColumnName("return_date")
+                      .IsRequired();
+            });
+
+            modelBuilder.Entity<AuctionRefundEntry>(entity =>
+            {
+                entity.ToTable("auction_refunds"); // Database table name
+
+                entity.HasKey(e => e.Id); // Primary key
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("id")
+                      .IsRequired()
+                      .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.BidderGuid)
+                      .HasColumnName("bidder_guid")
+                      .IsRequired();
+
+                entity.Property(e => e.RefundedAmount)
+                      .HasColumnName("refunded_amount")
+                      .IsRequired();
+
+                entity.Property(e => e.RefundDate)
+                      .HasColumnName("refund_date")
+                      .IsRequired();
+            });
+
+            modelBuilder.Entity<AuctionPaymentEntry>(entity =>
+            {
+                entity.ToTable("auction_payments"); // Database table name
+
+                entity.HasKey(e => e.Id); // Primary key
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("id")
+                      .IsRequired()
+                      .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.SellerGuid)
+                      .HasColumnName("seller_guid")
+                      .IsRequired();
+
+                entity.Property(e => e.Amount)
+                      .HasColumnName("amount")
+                      .IsRequired();
+
+                entity.Property(e => e.PaymentDate)
+                      .HasColumnName("payment_date")
+                      .IsRequired();
             });
 
             OnModelCreatingPartial(modelBuilder);
