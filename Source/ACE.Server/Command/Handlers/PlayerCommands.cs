@@ -19,6 +19,7 @@ using System.Linq;
 using ACE.Entity.Enum.Properties;
 using ACE.Database.Models.Auth;
 using static ACE.Server.WorldObjects.Player;
+using ACE.Database.Models.Shard;
 //using System.Xml.Linq;
 //using Lifestoned.DataModel.DerethForever;
 //using MySqlX.XDevAPI.Common;
@@ -640,6 +641,17 @@ namespace ACE.Server.Command.Handlers
                     session.Player.SendMessage(AuctionHouse.ListActiveAuctions());
                     break;
 
+                case "search":
+                    if (parameters.Length < 2)
+                    {
+                        session.Player.SendMessage("Usage: /auction search <melee|missile|caster|armor|jewelry|misc>");
+                        return;
+                    }
+
+                    string searchType = parameters[1].ToLower();
+                    session.Player.SendMessage(AuctionHouse.SearchAuctionsByType(searchType));
+                    break;
+
                 case "sell":
                     if (parameters.Length < 4)
                     {
@@ -655,6 +667,18 @@ namespace ACE.Server.Command.Handlers
                         return;
                     }
 
+                    if (minBid < 1 || buyoutPrice < 1 || duration < 1)
+                    {
+                        session.Player.SendMessage("Invalid parameters. Ensure minBid, buyoutPrice, and time are positive numbers.");
+                        return;
+                    }
+
+                    if (buyoutPrice < minBid)
+                    {
+                        session.Player.SendMessage("Invalid parameters. Buyout price must be greater than or equal to the minimum bid.");
+                        return;
+                    }
+
                     var selectedItemId = session.Player.CurrentAppraisalTarget;
                     if (selectedItemId == null)
                     {
@@ -662,7 +686,6 @@ namespace ACE.Server.Command.Handlers
                         return;
                     }
 
-                    // Convert item ID to actual WorldObject
                     var selectedItem = session.Player.FindObject((uint)selectedItemId, SearchLocations.Everywhere);
                     if (selectedItem == null)
                     {
@@ -670,14 +693,31 @@ namespace ACE.Server.Command.Handlers
                         return;
                     }
 
-                    // Use our new remove function
-                    if (!session.Player.TryRemoveItemForAuction(selectedItem))
+                    // ✅ Get the player's IP address
+                    string playerIp = session.EndPoint.Address.ToString();
+
+                    // ✅ **Check if the player is allowed to list an auction BEFORE removing item**
+                    if (!AuctionHouse.CanListAuction(session.Player, playerIp))
                     {
-                        session.Player.SendMessage("Failed to remove item from inventory. Ensure it is not equipped or in trade.");
-                        return;
+                        return; // ⛔ Exit before removing the item!
                     }
 
-                    AuctionHouse.ListAuction(session.Player, selectedItem, minBid, buyoutPrice, duration);
+                    // ✅ Ask for confirmation before proceeding
+                    string itemName = selectedItem.NameWithMaterial;
+                    string message = $"Are you sure you want to list {itemName} for auction with a minimum bid of {minBid} and a buyout price of {buyoutPrice} Enlightened Coins?";
+
+                    session.Player.ConfirmationManager.EnqueueSend(new Confirmation_Custom(session.Player.Guid, () =>
+                    {
+                        // ✅ Player confirmed → Remove item & list auction
+                        if (!session.Player.TryRemoveItemForAuction(selectedItem))
+                        {
+                            session.Player.SendMessage($"[Auction Error] Failed to remove {selectedItem.NameWithMaterial} from inventory. Ensure it is not equipped, in trade, attuned, or a container.");
+                            return;
+                        }
+
+                        AuctionHouse.ListAuction(session.Player, selectedItem, minBid, buyoutPrice, duration, playerIp);
+                    }), message);
+
                     break;
 
                 case "bid":
@@ -720,15 +760,35 @@ namespace ACE.Server.Command.Handlers
                     AuctionHouse.RetrieveAuctionReturns(session.Player);
                     break;
 
-                    case "cancel":
-                        if (parameters.Length < 2 || !int.TryParse(parameters[1], out int cancelId))
+                case "cancel":
+                    if (parameters.Length < 2 || !int.TryParse(parameters[1], out int cancelId))
                     {
-                            session.Player.SendMessage("Usage: /auction cancel <id>");
-                            return;
-                        }
+                        session.Player.SendMessage("Usage: /auction cancel <id>");
+                        return;
+                    }
 
+                    var auction = AuctionHouse.GetAuctionById(cancelId);
+                    if (auction == null)
+                    {
+                        session.Player.SendMessage("[AUCTION ERROR] Auction not found.");
+                        return;
+                    }
+                    session.Player.SendMessage($"[debug] Auction ID: {auction.AuctionId}, Seller GUID: {auction.SellerGuid}, Your GUID: {session.Player.Guid.Full}");
+
+                    // ✅ Fix logic to check if seller is canceling their own auction
+                    if ((ulong)auction.SellerGuid == (ulong)session.Player.Guid.Full)
+                    {
                         AuctionHouse.CancelAuction(session.Player, cancelId);
-                        break;
+                    }
+                    else if (auction.CurrentBidder != null && auction.CurrentBidder.Guid.Full == session.Player.Guid.Full)
+                    {
+                        AuctionHouse.CancelBid(session.Player, cancelId);
+                    }
+                    else
+                    {
+                        session.Player.SendMessage("[AUCTION ERROR] You can only cancel your own auction listing or bid.");
+                    }
+                    break;
 
                 default:
                     session.Player.SendMessage("Invalid auction command. Use: list | sell | bid | buyout | preview | retrieve | cancel.");
