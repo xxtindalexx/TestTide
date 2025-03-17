@@ -18,6 +18,8 @@ using ACE.Server.Network.GameMessages;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Database.Models.Shard;
 using MySql.Data.MySqlClient;
+using ACE.Server.WorldObjects;
+using System;
 
 namespace ACE.Server.Network.Handlers
 {
@@ -312,6 +314,9 @@ namespace ACE.Server.Network.Handlers
                     session.SendCharacterError(CharacterError.Delete);
                     return;
                 }
+
+                // ✅ Handle active auctions before deletion
+                AuctionHouse.HandleCharacterDeletion(offlinePlayer.Guid.Full);
 
                 session.Network.EnqueueSend(new GameMessageCharacterDelete());
 

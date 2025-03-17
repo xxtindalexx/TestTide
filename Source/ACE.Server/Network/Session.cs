@@ -215,6 +215,13 @@ namespace ACE.Server.Network
                     //Characters[i].IsDeleted = true;
                     DatabaseManager.Shard.GetCharacter(Characters[i].Id, x =>
                     {
+                        if (x == null) return;
+
+                        Console.WriteLine($"[AUCTION CLEANUP] Checking auctions for deleted character: {x.Name} (GUID: {x.Id})");
+
+                        // ✅ Handle auction cleanup before deletion
+                        AuctionHouse.HandleCharacterDeletion(x.Id);
+
                         x.IsDeleted = true;
                         DatabaseManager.Shard.SaveCharacter(x, new ReaderWriterLockSlim(), null);
 

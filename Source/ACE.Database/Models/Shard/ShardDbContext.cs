@@ -63,6 +63,7 @@ namespace ACE.Database.Models.Shard
         public virtual DbSet<AuctionReturnEntry> AuctionReturns { get; set; }
         public virtual DbSet<AuctionRefundEntry> AuctionRefunds { get; set; }
         public virtual DbSet<AuctionPaymentEntry> AuctionPayments { get; set; }
+        public virtual DbSet<AuctionIpTracking> AuctionIpTracking { get; set; }
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -1615,6 +1616,17 @@ namespace ACE.Database.Models.Shard
                       .HasColumnName("seller_guid")
                       .IsRequired();
 
+                entity.Property(e => e.SellerName)
+                      .HasColumnName("seller_name")
+                      .IsRequired();
+
+                entity.Property(e => e.SellerIp) // ✅ Add Seller IP
+                      .HasColumnName("seller_ip")
+                      .IsRequired();
+
+                entity.Property(e => e.LastBidderGuid)
+                      .HasColumnName("last_bidder_guid");
+
                 entity.Property(e => e.BuyerGuid)
                       .HasColumnName("buyer_guid");
 
@@ -1629,12 +1641,19 @@ namespace ACE.Database.Models.Shard
                       .HasColumnName("highest_bid")
                       .IsRequired();
 
+                entity.Property(e => e.PreviousBidAmount)
+                      .HasColumnName("previous_bid_amount");
+
                 entity.Property(e => e.DurationSeconds)
                       .HasColumnName("duration_seconds")
                       .IsRequired();
 
                 entity.Property(e => e.StartTime)
                       .HasColumnName("start_time")
+                      .IsRequired();
+
+                entity.Property(e => e.ItemType)
+                      .HasColumnName("item_type")
                       .IsRequired();
             });
 
@@ -1711,6 +1730,30 @@ namespace ACE.Database.Models.Shard
 
                 entity.Property(e => e.PaymentDate)
                       .HasColumnName("payment_date")
+                      .IsRequired();
+            });
+
+            modelBuilder.Entity<AuctionIpTracking>(entity =>
+            {
+                entity.ToTable("auction_ip_tracking"); // Table name
+
+                entity.HasKey(e => e.Id); // Primary Key
+
+                entity.Property(e => e.Id)
+                      .HasColumnName("id")
+                      .IsRequired()
+                      .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.IpAddress)
+                      .HasColumnName("ip_address")
+                      .IsRequired();
+
+                entity.Property(e => e.ActiveAuctions)
+                      .HasColumnName("active_auctions")
+                      .IsRequired();
+
+                entity.Property(e => e.LastAuctionListed)
+                      .HasColumnName("last_auction_listed")
                       .IsRequired();
             });
 

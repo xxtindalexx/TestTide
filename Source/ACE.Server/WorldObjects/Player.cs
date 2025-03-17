@@ -1225,7 +1225,10 @@ namespace ACE.Server.WorldObjects
         {
             if (item.GetProperty(PropertyInt.Attuned) > 0)
             {
-                SendMessage($"[AUCTION ERROR] You cannot list {item.NameWithMaterial} for auction because it is attuned.");
+                return false;
+            }
+            if (item.WeenieType == WeenieType.Container)
+            {
                 return false;
             }
             //Console.WriteLine($"[AUCTION DEBUG] Attempting to remove {item.NameWithMaterial} ({item.Guid.Full}) from inventory for auction...");
@@ -1239,8 +1242,6 @@ namespace ACE.Server.WorldObjects
 
             if (removed)
             {
-                //Console.WriteLine($"[AUCTION DEBUG] Item {item.NameWithMaterial} successfully removed.");
-
                 // 🔄 **Force database sync before destroying the object**
                 DeepSave(item);  // <------ This ensures database persistence
 
