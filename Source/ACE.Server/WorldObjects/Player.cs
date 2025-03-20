@@ -1231,6 +1231,10 @@ namespace ACE.Server.WorldObjects
             {
                 return false;
             }
+            if (item.WeenieClassId == 300004)
+            {
+                return false;
+            }
             //Console.WriteLine($"[AUCTION DEBUG] Attempting to remove {item.NameWithMaterial} ({item.Guid.Full}) from inventory for auction...");
 
             // 🔍 **Check if the item exists before removal**

@@ -625,13 +625,60 @@ namespace ACE.Server.Command.Handlers
             }
         }
 
+        [CommandHandler("linkdiscord", AccessLevel.Player, CommandHandlerFlag.None, "links the discord user Id for this character.", "")]
+
+        public static void HandleDsicordAccountId(Session session, params string[] parameters)
+        {
+            // Check if the parameter is missing or empty
+            if (parameters.Length == 0 || string.IsNullOrEmpty(parameters[0]))
+            {
+                // Provide feedback on how to use the command
+                session.Network.EnqueueSend(new GameMessageSystemChat("Usage: /linkdiscord <DiscordUserId>. Please provide your Discord user ID to link your account.", ChatMessageType.Broadcast));
+                return;
+            }
+            if (long.TryParse(parameters[0], out long userId))
+            {
+                if (userId > 0)
+                {
+                    if (session.Player.DiscordUserId != null && session.Player.DiscordUserId == userId)
+                    {
+                        session.Network.EnqueueSend(new GameMessageSystemChat($"The Discord user Id for this character has already been set to {userId}.", ChatMessageType.Broadcast));
+                        return;
+                    }
+                    foreach (var p in PlayerManager.GetAllOnline().Where(x => x.DiscordUserId != null))
+                    {
+                        if (p.DiscordUserId == userId && p.Account.AccountName != session.Account)
+                        {
+                            session.Network.EnqueueSend(new GameMessageSystemChat($"Someone has already claimed that Discord user Id. If you think this is wrong please contact an admin.", ChatMessageType.Broadcast));
+                            return;
+                        }
+                    }
+                    foreach (var p in PlayerManager.GetAllOffline().Where(x => x.DiscordUserId != null))
+                    {
+                        if (p.DiscordUserId == userId && p.Account.AccountName != session.Account)
+                        {
+                            session.Network.EnqueueSend(new GameMessageSystemChat($"Someone has already claimed that Discord user Id. If you think this is wrong please contact an admin.", ChatMessageType.Broadcast));
+                            return;
+                        }
+                    }
+
+                    session.Network.EnqueueSend(new GameMessageSystemChat($"The Discord user id {userId} has been assigned to this account.", ChatMessageType.Broadcast));
+                    session.Player.DiscordUserId = userId;
+                }
+
+                return;
+            }
+
+            return;
+        }
+
         [CommandHandler("auction", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Auction House commands",
-"list | sell <minBid> <buyoutPrice> <time> | bid <id> <amount> | buyout <id> | preview <id> | retrieve | cancel <id>")]
+"list | sell <minBid> <buyoutPrice> <time> | bid <id> <amount> | buyout <id> | retrieve | cancel <id>")]
         public static void HandleAuctionCommand(Session session, params string[] parameters)
         {
             if (parameters.Length == 0)
             {
-                session.Player.SendMessage("Usage: /auction list | sell <minBid> <buyoutPrice> <time> | bid <id> <amount> | buyout <id> | preview <id> | retrieve | cancel <id>");
+                session.Player.SendMessage("Usage: /auction list | sell <minBid> <buyoutPrice> <time> | bid <id> <amount> | buyout <id> | retrieve | cancel <id>");
                 return;
             }
 
@@ -655,7 +702,7 @@ namespace ACE.Server.Command.Handlers
                 case "sell":
                     if (parameters.Length < 4)
                     {
-                        session.Player.SendMessage("Usage: /auction sell <minBid> <buyoutPrice> <time>");
+                        session.Player.SendMessage("Usage: /auction sell <minBid> <buyoutPrice> <time> <description>");
                         return;
                     }
 
@@ -693,14 +740,16 @@ namespace ACE.Server.Command.Handlers
                         return;
                     }
 
+                    // ✅ Optional seller note string (joins the remaining params)
+                    string sellerNote = parameters.Length > 4
+                    ? string.Join(" ", parameters.Skip(4)).Substring(0, Math.Min(200, string.Join(" ", parameters.Skip(4)).Length))
+                    : "";
+
                     // ✅ Get the player's IP address
                     string playerIp = session.EndPoint.Address.ToString();
 
-                    // ✅ **Check if the player is allowed to list an auction BEFORE removing item**
                     if (!AuctionHouse.CanListAuction(session.Player, playerIp))
-                    {
-                        return; // ⛔ Exit before removing the item!
-                    }
+                        return;
 
                     // ✅ Ask for confirmation before proceeding
                     string itemName = selectedItem.NameWithMaterial;
@@ -708,14 +757,15 @@ namespace ACE.Server.Command.Handlers
 
                     session.Player.ConfirmationManager.EnqueueSend(new Confirmation_Custom(session.Player.Guid, () =>
                     {
-                        // ✅ Player confirmed → Remove item & list auction
                         if (!session.Player.TryRemoveItemForAuction(selectedItem))
                         {
-                            session.Player.SendMessage($"[Auction Error] Failed to remove {selectedItem.NameWithMaterial} from inventory. Ensure it is not equipped, in trade, attuned, or a container.");
+                            session.Player.SendMessage($"[Auction Error] Failed to remove {selectedItem.NameWithMaterial} from inventory. Ensure it is not equipped, in trade, attuned, enlighten coins, or a container.");
                             return;
                         }
 
-                        AuctionHouse.ListAuction(session.Player, selectedItem, minBid, buyoutPrice, duration, playerIp);
+                        // 🔥 Pass the seller note into ListAuction
+                        AuctionHouse.ListAuction(session.Player, selectedItem, minBid, buyoutPrice, duration, playerIp, sellerNote);
+
                     }), message);
 
                     break;
@@ -744,16 +794,6 @@ namespace ACE.Server.Command.Handlers
                     }
 
                     AuctionHouse.BuyoutItem(session.Player, buyoutId);
-                    break;
-
-                case "preview":
-                    if (parameters.Length < 2 || !int.TryParse(parameters[1], out int previewId))
-                    {
-                        session.Player.SendMessage("Usage: /auction preview <id>");
-                        return;
-                    }
-
-                    AuctionHouse.PreviewAuctionItem(session.Player, previewId);
                     break;
 
                 case "retrieve":

@@ -80,6 +80,8 @@ namespace ACE.Server.Entity
 
         int? HouseRentTimestamp { get; set; }
 
+        long? DiscordUserId { get; set; }
+
 
         uint GetCurrentLoyalty();
 

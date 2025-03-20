@@ -54,5 +54,6 @@ namespace ACE.Entity.Enum.Properties
         LumAugMissileDefenseCount = 9025,
         LumAugMagicDefenseCount = 9026,
         BankedWeaklyEnlightenedCoins = 9027,
+        DiscordUserId          = 9028,
     }
 }

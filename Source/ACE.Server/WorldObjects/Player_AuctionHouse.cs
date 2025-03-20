@@ -14,8 +14,6 @@ using ACE.Database;
 using ACE.Entity.Models;
 using Discord;
 using ACE.Entity.Enum;
-using ACE.Server.Network.GameEvent.Events;
-using ACE.Server.WorldObjects;
 
 namespace ACE.Server.WorldObjects
 {
@@ -24,7 +22,6 @@ namespace ACE.Server.WorldObjects
         private static readonly object auctionLock = new object();
         private static readonly List<AuctionItem> ActiveAuctions = new List<AuctionItem>();
         private static readonly List<AuctionReturnItem> PendingReturns = new List<AuctionReturnItem>();
-        private static Dictionary<int, List<Player>> ActiveAuctionPreviews = new Dictionary<int, List<Player>>();
 
         // Load auctions from the database on server startup
         public static void LoadAuctionsFromDB()
@@ -68,7 +65,7 @@ namespace ACE.Server.WorldObjects
                             DurationSeconds = entry.DurationSeconds
                         });
 
-                        Console.WriteLine($"[AUCTION] Successfully loaded auction {entry.Id} - Seller Guid: {entry.SellerGuid} Seller Name {entry.SellerName}.");
+                        //Console.WriteLine($"[AUCTION] Successfully loaded auction {entry.Id} - Seller Guid: {entry.SellerGuid} Seller Name {entry.SellerName}.");
                     }
                 }
             }
@@ -282,21 +279,21 @@ namespace ACE.Server.WorldObjects
             }
         }
 
-        public static void ListAuction(Player seller, WorldObject item, int minBid, int buyoutPrice, int durationMinutes, string playerIp)
+        public static void ListAuction(Player seller, WorldObject item, int minBid, int buyoutPrice, int durationMinutes, string playerIp, string sellerNote)
         {
             lock (auctionLock)
             {
                 // ✅ We no longer check the auction limit here, since it's handled in `CanListAuction()`
 
                 bool removedSuccessfully = seller.TryRemoveItemForAuction(item);
-                Console.WriteLine($"[DEBUG] Attempted to remove {item.NameWithMaterial} for auction. Success: {removedSuccessfully}");
+                //Console.WriteLine($"[DEBUG] Attempted to remove {item.NameWithMaterial} for auction. Success: {removedSuccessfully}");
 
                 var existingItem = seller.FindObject((uint)item.Guid.Full, SearchLocations.Everywhere);
                 if (!removedSuccessfully)
                 {
                     if (existingItem != null)
                     {
-                        Console.WriteLine($"[DEBUG] {item.NameWithMaterial} still exists in inventory. Aborting auction.");
+                        //Console.WriteLine($"[DEBUG] {item.NameWithMaterial} still exists in inventory. Aborting auction.");
                         seller.SendMessage($"[Auction Error] Failed to remove {item.NameWithMaterial} from inventory. Ensure it is not equipped, in trade, attuned, or a container.");
                         return;
                     }
@@ -321,17 +318,18 @@ namespace ACE.Server.WorldObjects
                     BuyoutPrice = buyoutPrice,
                     HighestBid = 0,
                     DurationSeconds = durationMinutes * 60,
-                    StartTime = DateTime.UtcNow
+                    StartTime = DateTime.UtcNow,
+                    SellerNote = sellerNote
                 };
 
-                Console.WriteLine($"[DEBUG] Auction created. Seller GUID before save: {auction.SellerGuid} & Seller Name: {auction.SellerName} & ItemType: {auction.ItemType}");
+               // Console.WriteLine($"[DEBUG] Auction created. Seller GUID before save: {auction.SellerGuid} & Seller Name: {auction.SellerName} & ItemType: {auction.ItemType}");
                 ActiveAuctions.Add(auction);
                 SaveAuctionToDB(auction);
-                Console.WriteLine($"[DEBUG] Auction added to ActiveAuctions. Seller GUID after save: {auction.SellerGuid} & Seller Name: {auction.SellerName} & ItemType: {auction.ItemType}");
+               // Console.WriteLine($"[DEBUG] Auction added to ActiveAuctions. Seller GUID after save: {auction.SellerGuid} & Seller Name: {auction.SellerName} & ItemType: {auction.ItemType}");
 
                 int quantity = item.GetProperty(PropertyInt.StackSize) ?? 1;
                 string stackMessage = quantity > 1 ? $"({quantity})" : "";
-                seller.SendMessage($"[AUCTION LISTED] You have listed {stackMessage}{item.NameWithMaterial} for auction with a minimum bid of {minBid} and a buyout price of {buyoutPrice} Enlightened Coins.");
+                seller.SendMessage($"[AUCTION LISTED] You have listed {stackMessage}{item.NameWithMaterial} for auction with a minimum bid of {minBid} and a buyout price of {buyoutPrice} Enlightened Coins."); 
             }
         }
 
@@ -342,11 +340,11 @@ namespace ACE.Server.WorldObjects
                 string itemTypeCategory = GetItemTypeCategory(auction.Item.ItemType);
                 if (string.IsNullOrEmpty(auction.SellerIp))
                 {
-                    Console.WriteLine($"[AUCTION ERROR] Seller IP is null for Auction {auction.AuctionId}");
+                    //Console.WriteLine($"[AUCTION ERROR] Seller IP is null for Auction {auction.AuctionId}");
                     return;
                 }
 
-                Console.WriteLine($"[DEBUG] Saving auction {auction.AuctionId} - Seller GUID: {auction.SellerGuid}, IP: {auction.SellerIp}, Type: {auction.ItemType}");
+               // Console.WriteLine($"[DEBUG] Saving auction {auction.AuctionId} - Seller GUID: {auction.SellerGuid}, IP: {auction.SellerIp}, Type: {auction.ItemType}");
                 var auctionEntry = new AuctionEntry
                 {
                     ItemGuid = auction.Item.Guid.Full,
@@ -360,7 +358,8 @@ namespace ACE.Server.WorldObjects
                     LastBidderGuid = auction.LastBidderGuid ?? 0,
                     DurationSeconds = auction.DurationSeconds,
                     StartTime = DateTime.UtcNow, // Ensure a valid timestamp
-                    ItemType = itemTypeCategory
+                    ItemType = itemTypeCategory,
+                    SellerNote = auction.SellerNote
                 };
 
                 context.AuctionEntries.Add(auctionEntry);
@@ -467,7 +466,7 @@ namespace ACE.Server.WorldObjects
                 if (auction.CurrentBidder != null)
                 {
                     auction.CurrentBidder.BankedEnlightenedCoins += auction.HighestBid;
-                    auction.CurrentBidder.SendMessage($"[AUCTION WARN] You have been outbid on {auction.Item.NameWithMaterial}. Your {auction.HighestBid} Enlightened Coins have been refunded.");
+                    auction.CurrentBidder.SendMessage($"[AUCTION WARN] You have been outbid on {auction.Item.NameWithMaterial}. Your {auction.HighestBid} Enlightened Coins have been refunded.");  
                 }
 
                 // ✅ Deduct from new bidder
@@ -478,6 +477,7 @@ namespace ACE.Server.WorldObjects
                 auction.PreviousBidAmount = auction.HighestBid;
                 auction.CurrentBidder = bidder;
                 auction.HighestBid = bidAmount;
+                NotifyBidderOutbid(auction, bidder);
 
                 // ✅ Persist changes to database
                 using (var context = new ShardDbContext())
@@ -547,14 +547,6 @@ namespace ACE.Server.WorldObjects
                     return;
                 }
 
-                // ✅ **REMOVE ALL PREVIEWED VERSIONS OF THE ITEM FIRST**
-                RemoveAllPreviewItems(auctionId, "the item has been purchased");
-
-                // ✅ Remove preview-related properties
-                auction.Item.RemoveProperty(PropertyInt.CreationTimestamp);
-                auction.Item.RemoveProperty(PropertyInt.RemainingLifespan);
-                auction.Item.RemoveProperty(PropertyInt.Lifespan);
-
                 // Deduct coins from the buyer
                 buyer.BankedEnlightenedCoins -= auction.BuyoutPrice;
 
@@ -573,10 +565,12 @@ namespace ACE.Server.WorldObjects
                 {
                     sellerOnline.BankedEnlightenedCoins += auction.BuyoutPrice;
                     sellerOnline.SendMessage($"[AUCTION SOLD] Your item {auction.Item.NameWithMaterial} was sold for {auction.BuyoutPrice} Enlightened Coins.");
+                    NotifySellerAuctionSoldBuyout(auction);
                 }
                 else // ✅ Seller is OFFLINE - Store pending payment in DB
                 {
                     StorePendingAuctionPayment(sellerGuid, auction.BuyoutPrice);
+                    NotifySellerAuctionSoldBuyout(auction);
                 }
 
                 // ✅ **Ensure the item is given to the buyer**
@@ -589,6 +583,7 @@ namespace ACE.Server.WorldObjects
                 else
                 {
                     buyer.SendMessage($"[AUCTION WON] You have purchased {auction.Item.NameWithMaterial} for {auction.BuyoutPrice} Enlightened Coins.");
+                    NotifyBidderAuctionSoldBid(auction);
                 }
 
                 // ✅ **Remove auction from active list and DB**
@@ -618,21 +613,13 @@ namespace ACE.Server.WorldObjects
                             var seller = PlayerManager.GetOnlinePlayer((uint)sellerGuid);
                             var buyer = PlayerManager.GetOnlinePlayer((uint)buyerGuid);
 
-                            // ✅ **Ensure all preview items are removed before auction completes**
-                            RemoveAllPreviewItems(auction.AuctionId, "the auction has expired");
-
-                            // ✅ Remove preview-related properties
-                            auction.Item.RemoveProperty(PropertyInt.CreationTimestamp);
-                            auction.Item.RemoveProperty(PropertyInt.RemainingLifespan);
-                            auction.Item.RemoveProperty(PropertyInt.Lifespan);
-
-
                             if (auction.HighestBid > 0) // **Item was sold**
                             {
                                 if (seller != null)
                                 {
                                     seller.BankedEnlightenedCoins += auction.HighestBid;
                                     seller.SendMessage($"[AUCTION SOLD] Your auction for {auction.Item.NameWithMaterial} was sold for {auction.HighestBid} Enlightened Coin(s).");
+                                    NotifySellerAuctionSoldBid(auction);
                                 }
                                 else
                                 {
@@ -650,6 +637,7 @@ namespace ACE.Server.WorldObjects
                                     else
                                     {
                                         buyer.SendMessage($"[AUCTION WON] Congratulations! You won {auction.Item.NameWithMaterial}.");
+                                        NotifyBidderAuctionSoldBid(auction);
                                     }
                                 }
                                 else
@@ -668,6 +656,7 @@ namespace ACE.Server.WorldObjects
                                     else
                                     {
                                         seller.SendMessage($"[AUCTION EXPIRED] Your auction for {auction.Item.NameWithMaterial} expired and was returned.");
+                                        NotifySellerAuctionExpired(auction);
                                     }
                                 }
                                 else
@@ -818,92 +807,6 @@ namespace ACE.Server.WorldObjects
             }
         }
 
-        public static void PreviewAuctionItem(Player player, int auctionId)
-        {
-            lock (auctionLock)
-            {
-                var auction = ActiveAuctions.FirstOrDefault(a => a.AuctionId == auctionId);
-                if (auction == null)
-                {
-                    player.SendMessage("[AUCTION ERROR] Auction not found.");
-                    return; // ⛔ Prevents `NullReferenceException`
-                }
-
-                // ✅ Ensure `ActiveAuctionPreviews` is initialized
-                if (ActiveAuctionPreviews == null)
-                {
-                    ActiveAuctionPreviews = new Dictionary<int, List<Player>>();
-                }
-
-                // ✅ Store player previewing the auction
-                if (!ActiveAuctionPreviews.ContainsKey(auctionId))
-                {
-                    ActiveAuctionPreviews[auctionId] = new List<Player>();
-                }
-
-                if (!ActiveAuctionPreviews[auctionId].Contains(player))
-                {
-                    ActiveAuctionPreviews[auctionId].Add(player);
-                }
-
-                // ✅ Send preview item to player
-                var previewItem = auction.Item;
-                if (previewItem == null)
-                {
-                    player.SendMessage("[AUCTION ERROR] Failed to create a preview of this item.");
-                    return;
-                }
-
-                previewItem.SetProperty(PropertyInt.CreationTimestamp, (int)Time.GetUnixTime());
-                previewItem.SetProperty(PropertyInt.RemainingLifespan, 300); // 5 minutes
-                previewItem.SetProperty(PropertyInt.Lifespan, 300);
-
-                // ✅ Add to player's inventory
-                if (!player.TryCreateInInventoryWithNetworking(previewItem))
-                {
-                    player.SendMessage("[AUCTION ERROR] Your inventory is full. Unable to provide auction preview.");
-                    return;
-                }
-
-                player.SendMessage($"[AUCTION PREVIEW] A preview of {auction.Item.NameWithMaterial} has been placed in your inventory. It will expire in 5 minutes.");
-            }
-        }
-
-        private static void RemoveAllPreviewItems(int auctionId, string reason)
-        {
-            if (ActiveAuctionPreviews.TryGetValue(auctionId, out var previewingPlayers))
-            {
-                foreach (var player in previewingPlayers.ToList())
-                {
-                    var auction = ActiveAuctions.FirstOrDefault(a => a.AuctionId == auctionId);
-                    if (auction == null) continue;
-
-                    var previewItem = player.Inventory.FirstOrDefault(item => item.Value.Name == auction.Item.Name).Value;
-
-                    if (previewItem != null)
-                    {
-                        bool removed = player.TryRemoveFromInventoryWithNetworking(previewItem.Guid, out _, RemoveFromInventoryAction.ConsumeItem);
-
-                        if (removed)
-                        {
-                            player.Session.Network.EnqueueSend(new GameEventViewContents(player.Session, player));
-                            player.SendMessage($"[AUCTION PREVIEW] The previewed item {previewItem.NameWithMaterial} has been removed because: {reason}.");
-                        }
-                        else
-                        {
-                            player.SendMessage($"[AUCTION ERROR] Failed to remove preview item {previewItem.NameWithMaterial}. Please report this.");
-                        }
-                    }
-
-                    previewingPlayers.Remove(player);
-                }
-
-                if (previewingPlayers.Count == 0)
-                    ActiveAuctionPreviews.Remove(auctionId);
-            }
-        }
-
-
         public static void CancelAuction(Player seller, int auctionId)
         {
             lock (auctionLock)
@@ -930,15 +833,6 @@ namespace ACE.Server.WorldObjects
                         return;
                     }
 
-                    // ✅ **Remove ALL preview items from players before returning the item**
-                    RemoveAllPreviewItems(auctionId, "the auction was canceled by the seller");
-
-
-                    // ✅ Remove preview-related properties
-                    auction.Item.RemoveProperty(PropertyInt.CreationTimestamp);
-                    auction.Item.RemoveProperty(PropertyInt.RemainingLifespan);
-                    auction.Item.RemoveProperty(PropertyInt.Lifespan);
-
                     // ✅ Return item to seller
                     if (!seller.TryCreateInInventoryWithNetworking(auction.Item))
                     {
@@ -947,6 +841,7 @@ namespace ACE.Server.WorldObjects
                     else
                     {
                         seller.SendMessage($"[AUCTION CANCEL] Your auction for {auction.Item.NameWithMaterial} has been canceled and returned to you.");
+                        NotifyPreviousBidderAuctionCanceled(auction);
                     }
 
                     context.AuctionEntries.Remove(auctionEntry);
@@ -994,6 +889,7 @@ namespace ACE.Server.WorldObjects
 
                     // Notify reinstated bidder
                     previousBidder.SendMessage($"[AUCTION INFO] Your previous bid of {auction.PreviousBidAmount} Enlightened Coins on {auction.Item.NameWithMaterial} has been reinstated.");
+                    NotifyBidderBidCanceled(auction, previousBidder);
 
                     // Update auction state
                     auction.CurrentBidder = previousBidder;
@@ -1050,7 +946,10 @@ namespace ACE.Server.WorldObjects
                     double timeLeft = a.DurationSeconds - (DateTime.UtcNow - a.StartTime).TotalSeconds;
                     string formattedTime = TimeSpan.FromSeconds(Math.Max(0, timeLeft)).ToString(@"hh\:mm\:ss");
 
-                    return $"[ID] {a.AuctionId} listed by {a.SellerName} : [{a.ItemType}] [{a.Item.NameWithMaterial}] [Min Bid]: {a.MinBid} Enlightened Coins | [Buyout]: {a.BuyoutPrice} Enlightened Coins | [Current Bid]: {a.HighestBid} Enlightened Coins | Ends in: {formattedTime}";
+                    // Pull directly from seller note
+                    string sellerNote = !string.IsNullOrWhiteSpace(a.SellerNote) ? a.SellerNote : a.Item.NameWithMaterial;
+
+                    return $"[ID] {a.AuctionId}: listed by {a.SellerName}, [{sellerNote}] [Min Bid] {a.MinBid} EC | [Buyout] {a.BuyoutPrice} EC | [Current Bid] {(a.HighestBid > 0 ? a.HighestBid + " EC" : "No bids")} | Ends in {formattedTime}";
                 }));
             }
         }
@@ -1102,6 +1001,7 @@ namespace ACE.Server.WorldObjects
 
                         // Notify reinstated bidder
                         previousBidder.SendMessage($"[AUCTION NOTICE] Your previous bid of {auction.HighestBid} Enlightened Coins on {auction.Item.NameWithMaterial} has been reinstated after top bidder deletion.");
+                        NotifyBidderBidCanceled(auction, previousBidder);
 
                         // Notify seller
                         auction.Seller?.SendMessage($"[AUCTION UPDATE] {previousBidder.Name} is now the highest bidder on {auction.Item.NameWithMaterial} at {auction.HighestBid} Enlightened Coins due to a bidder deletion.");
@@ -1159,6 +1059,117 @@ namespace ACE.Server.WorldObjects
             }
         }
 
+        public static void NotifySellerAuctionSoldBuyout(AuctionItem auction)
+        {
+            if (auction.Seller?.DiscordUserId != null)
+            {
+                // Log the Discord User ID
+               // Console.WriteLine($"[AUCTION LOG] Seller Discord User ID: {auction.Seller.DiscordUserId}");
+
+                string message = $"Your auction for {auction.Item.NameWithMaterial} has been sold for {auction.BuyoutPrice} Enlightened Coins!";
+                DiscordChatManager.SendDiscordDM(auction.Seller.Name, message, (long)auction.Seller.DiscordUserId);  // Use the seller's Discord user ID for notification
+            }
+        }
+
+        public static void NotifyBidderAuctionSoldBid(AuctionItem auction)
+        {
+            if (auction.CurrentBidder?.DiscordUserId != null)
+            {
+                // Log the Discord User ID of the winner
+               // Console.WriteLine($"[AUCTION LOG] Winner Discord User ID: {auction.CurrentBidder.DiscordUserId}");
+
+                string message = $"You have won {auction.Item.NameWithMaterial} for {auction.HighestBid} Enlightened Coins!";
+                DiscordChatManager.SendDiscordDM(auction.CurrentBidder.Name, message, (long)auction.CurrentBidder.DiscordUserId);  // Notify the winner
+            }
+        }
+
+        public static void NotifySellerAuctionSoldBid(AuctionItem auction)
+        {
+            if (auction.Seller?.DiscordUserId != null)
+            {
+                // Log the Discord User ID
+               // Console.WriteLine($"[AUCTION LOG] Seller Discord User ID: {auction.Seller.DiscordUserId}");
+
+                string message = $"Your auction for {auction.Item.NameWithMaterial} has been sold for {auction.HighestBid} Enlightened Coins!";
+                DiscordChatManager.SendDiscordDM(auction.Seller.Name, message, (long)auction.Seller.DiscordUserId);  // Use the seller's Discord user ID for notification
+            }
+        }
+
+        public static void NotifySellerAuctionExpired(AuctionItem auction)
+        {
+            if (auction.Seller?.DiscordUserId != null)
+            {
+                // Log the Discord User ID
+              //  Console.WriteLine($"[AUCTION LOG] Seller Discord User ID: {auction.Seller.DiscordUserId}");
+
+                string message = $"Your auction for {auction.Item.NameWithMaterial} has expired without a purchase.";
+                DiscordChatManager.SendDiscordDM(auction.Seller.Name, message, (long)auction.Seller.DiscordUserId);
+            }
+        }
+
+        public static void NotifyBidderOutbid(AuctionItem auction, Player bidder)
+        {
+            // Ensure LastBidderGuid is set and check for value
+            if (auction.LastBidderGuid.HasValue)
+            {
+                var previousBidder = PlayerManager.FindByGuid((uint)auction.LastBidderGuid.Value);
+
+                if (previousBidder != null && previousBidder.DiscordUserId != null)
+                {
+                    // Log previous bidder info
+                    // Console.WriteLine($"[AUCTION LOG] Previous Bidder Discord User ID: {previousBidder.DiscordUserId}");
+                    // Console.WriteLine($"[AUCTION LOG] Previous Bidder Name: {previousBidder.Name}");
+
+                    string message = $"You have been outbid on {auction.Item.NameWithMaterial}. Current bid: {auction.HighestBid} Enlightened Coins.";
+                    DiscordChatManager.SendDiscordDM(previousBidder.Name, message, (long)previousBidder.DiscordUserId);  // Notify the previous bidder
+                }
+            }
+        }
+
+        public static void NotifyBidderBidCanceled(AuctionItem auction, Player bidder)
+        {
+            // Notify the previous bidder, if available
+            if (auction.LastBidderGuid.HasValue)
+            {
+                var previousBidder = PlayerManager.FindByGuid((uint)auction.LastBidderGuid.Value);
+                if (previousBidder?.DiscordUserId != null)
+                {
+                    // Log the previous bidder's Discord User ID
+                    //Console.WriteLine($"[AUCTION LOG] Previous Bidder Discord User ID: {previousBidder.DiscordUserId}");
+
+                    string messageToPreviousBidder = $"You have been reinstated as the highest bidder on {auction.Item.NameWithMaterial} with a bid of {auction.PreviousBidAmount} Enlightened Coins.";
+                    DiscordChatManager.SendDiscordDM(previousBidder.Name, messageToPreviousBidder, (long)previousBidder.DiscordUserId);
+                }
+            }
+        }
+
+        public static void NotifyPreviousBidderAuctionCanceled(AuctionItem auction)
+        {
+            if (auction.CurrentBidder != null && auction.CurrentBidder.DiscordUserId != null)
+            {
+                // Log the current bidder's Discord User ID
+                //Console.WriteLine($"[AUCTION LOG] Current Bidder Discord User ID: {auction.CurrentBidder.DiscordUserId}");
+
+                string message = $"The auction for {auction.Item.NameWithMaterial} has been canceled by the seller. Your bid of {auction.HighestBid} Enlightened Coins has been refunded.";
+                DiscordChatManager.SendDiscordDM(auction.CurrentBidder.Name, message, (long)auction.CurrentBidder.DiscordUserId);
+            }
+
+            // Notify the previous bidder if there's one
+            if (auction.LastBidderGuid.HasValue)
+            {
+                var previousBidder = PlayerManager.FindByGuid((uint)auction.LastBidderGuid.Value);
+                if (previousBidder?.DiscordUserId != null)
+                {
+                    // Log the previous bidder's Discord User ID
+                   // Console.WriteLine($"[AUCTION LOG] Previous Bidder Discord User ID: {previousBidder.DiscordUserId}");
+
+                    string messageToPreviousBidder = $"The auction for {auction.Item.NameWithMaterial} has been canceled. You were previously the highest bidder with {auction.PreviousBidAmount} Enlightened Coins.";
+                    DiscordChatManager.SendDiscordDM(previousBidder.Name, messageToPreviousBidder, (long)previousBidder.DiscordUserId);
+                }
+            }
+        }
+
+
         public class AuctionItem
         {
             public int AuctionId { get; set; }
@@ -1177,6 +1188,7 @@ namespace ACE.Server.WorldObjects
             public Stack<(ulong BidderGuid, int Amount)> PreviousBids { get; set; } = new Stack<(ulong, int)>();
             public string ItemType { get; set; }
             public int PreviousBidAmount { get; set; }
+            public string SellerNote { get; set; }
 
         }
 

@@ -135,7 +135,7 @@ namespace ACE.Server.Managers
                 return;
             }
 
-            log.Info($"[DiscordRelay] Relaying Discord message from {sender}: {content}");
+            //log.Info($"[DiscordRelay] Relaying Discord message from {sender}: {content}");
 
             if (message.Channel.Id == adminChannelId)
             {
@@ -183,10 +183,62 @@ namespace ACE.Server.Managers
                 player.Session.Network.EnqueueSend(chatMessage);
             }
 
-            log.Info($"[DiscordRelay] Sent Discord message from {sender} to {chatType} chat: {message}");
+            //log.Info($"[DiscordRelay] Sent Discord message from {sender} to {chatType} chat: {message}");
         }
 
+        public static void SendAuctionNotification(ulong discordUserId, string message)
+        {
+            if (ConfigManager.Config.Chat.EnableDiscordConnection && discordUserId != 0)
+            {
+                try
+                {
+                    var guild = _discordSocketClient.GetGuild((ulong)ConfigManager.Config.Chat.ServerId);
+                    var user = guild?.GetUser(discordUserId);
+                    user?.SendMessageAsync(message);
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"[DiscordAuctionNotify] Failed to send message to Discord user {discordUserId}: {ex.Message}");
+                }
+            }
+        }
 
+        public static async void SendDiscordDM(string playerName, string message, long userId)
+        {
+            if (ConfigManager.Config.Chat.EnableDiscordConnection)
+            {
+                try
+                {
+                    var user = await _discordSocketClient.GetUserAsync((ulong)userId);
+                    if (user != null)
+                    {
+                        // Check if the user is a RestUser or SocketUser
+                        if (user is IUser iUser)
+                        {
+                            // Create DM channel with IUser
+                            var dmChannel = await iUser.CreateDMChannelAsync(); // Creates DM channel if not existing
+                            await dmChannel.SendMessageAsync(message); // Send the message to their DM
+
+                            // Log the message sent
+                            Console.WriteLine($"[DISCORD DM LOG] Sent message to user {playerName} (ID: {userId}): {message}");
+                        }
+                        else
+                        {
+                            // Log if the user type is not recognized
+                            Console.WriteLine($"[DISCORD DM ERROR] Unrecognized user type: {user.GetType().Name} for user {userId}.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DISCORD DM ERROR] User with ID {userId} not found.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[DISCORD DM ERROR] Error sending Discord DM: {ex.Message}");
+                }
+            }
+        }
 
         public static void QueueMessageForDiscord(string message)
         {

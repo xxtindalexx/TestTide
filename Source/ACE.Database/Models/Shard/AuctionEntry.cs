@@ -26,5 +26,7 @@ namespace ACE.Database.Models
         public DateTime StartTime { get; set; } // When the auction expires
         public string ItemType { get; set; } // Category of the item
         public int PreviousBidAmount { get; set; } // Previous highest bid
+        public string SellerNote { get; set; }
+
     }
 }

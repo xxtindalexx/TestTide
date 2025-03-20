@@ -328,5 +328,10 @@ namespace ACE.Server.Entity
             get => GetProperty(PropertyInt64.BankedMythicalKeys) ?? 0;
             set { if (!value.HasValue) RemoveProperty(PropertyInt64.BankedMythicalKeys); else SetProperty(PropertyInt64.BankedMythicalKeys, value.Value); }
         }
+        public long? DiscordUserId
+        {
+            get => GetProperty(PropertyInt64.DiscordUserId);
+            set { if (!value.HasValue) RemoveProperty(PropertyInt64.DiscordUserId); else SetProperty(PropertyInt64.DiscordUserId, value.Value); }
+        }
     }
 }

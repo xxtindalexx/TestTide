@@ -1655,6 +1655,10 @@ namespace ACE.Database.Models.Shard
                 entity.Property(e => e.ItemType)
                       .HasColumnName("item_type")
                       .IsRequired();
+
+                entity.Property(e => e.SellerNote)
+                      .HasColumnName("seller_note")
+                      .IsRequired();
             });
 
             modelBuilder.Entity<AuctionReturnEntry>(entity =>
