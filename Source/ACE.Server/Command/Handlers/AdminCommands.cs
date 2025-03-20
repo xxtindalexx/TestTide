@@ -137,7 +137,7 @@ namespace ACE.Server.Command.Handlers
             wo.DeleteObject(rootOwner);
             session.Network.EnqueueSend(new GameMessageDeleteObject(wo));
 
-            PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has deleted 0x{wo.Guid}:{wo.Name}");
+            PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has deleted [WeenieID]: {wo.WeenieClassId} [GUID]: 0x{wo.Guid}:{wo.Name}");
         }
 
         // draw
@@ -2489,9 +2489,9 @@ namespace ACE.Server.Command.Handlers
             }
 
             if (numToSpawn > 1)
-                PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {numToSpawn} {obj.Name} (0x{obj.Guid:X8}) near {obj.Location.ToLOCString()}.");
+                PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {numToSpawn} {obj.Name} [WeenieID]: {obj.WeenieClassId} [GUID]: (0x{obj.Guid:X8}) near {obj.Location.ToLOCString()}.");
             else
-                PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {obj.Name} (0x{obj.Guid:X8}) at {obj.Location.ToLOCString()}.");
+                PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {obj.Name} [WeenieID]: {obj.WeenieClassId} [GUID]: (0x{obj.Guid:X8}) at {obj.Location.ToLOCString()}.");
         }
 
         public static Position LastSpawnPos;
@@ -2568,9 +2568,9 @@ namespace ACE.Server.Command.Handlers
             }
 
             if (count == 1)
-                PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {first.Name} (0x{first.Guid:X8}) at {first.Location.ToLOCString()}.");
+                PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {first.Name} [WeenieID]: {first.WeenieClassId} [GUID]: (0x{first.Guid:X8}) at {first.Location.ToLOCString()}.");
             else
-                PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {count}x {first.Name} at {first.Location.ToLOCString()}.");
+                PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {count}x {first.Name} [WeenieID]: {first.WeenieClassId} at {first.Location.ToLOCString()}.");
         }
 
         /// <summary>
@@ -2642,7 +2642,7 @@ namespace ACE.Server.Command.Handlers
 
             session.Player.TryCreateInInventoryWithNetworking(obj);
 
-            PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {obj.Name} (0x{obj.Guid:X8}) x{obj.StackSize} in their inventory.");
+            PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {obj.Name} [WeenieID]: {obj.WeenieClassId} [GUID]: (0x{obj.Guid:X8}) x{obj.StackSize} in their inventory.");
         }
 
         [CommandHandler("crack", AccessLevel.Envoy, CommandHandlerFlag.RequiresWorld, 0, "Cracks the most recently appraised locked target.", "[. open it too]")]
@@ -4890,18 +4890,37 @@ namespace ACE.Server.Command.Handlers
             DiscordChatManager.SendDiscordMessage("", msg, ConfigManager.Config.Chat.RaffleChannelId);
         }
 
-        [CommandHandler("serverquestcompletions", AccessLevel.Developer, CommandHandlerFlag.None, "Get Total Completions of a Quest for all Characters")]
+        [CommandHandler("serverquestcompletions", AccessLevel.Developer, CommandHandlerFlag.None, "Get Total Completions of a Quest for all Characters, if the top parameter is passed will list top 25 player completion counts", "<quest_name>, optional: top")]
         public static void HandleServerQuestCompletions(Session session, params string[] parameters)
         {
             if (parameters.Length > 0)
             {
                 var questName = parameters[0];
-                var completions = DatabaseManager.Shard.BaseDatabase.GetServerQuestCompletions(questName);
-                session.Player.SendMessage($"The quest {questName} has been completed {completions} times.");
+                if (parameters.Length > 1 && string.Equals("Top", parameters[1], StringComparison.OrdinalIgnoreCase))
+                {
+                    var list = DatabaseManager.Shard.BaseDatabase.GetTopQuestCompletions(questName);
+                    if (list.Count > 0)
+                    {
+                        session.Network.EnqueueSend(new GameMessageSystemChat($"Top 25 Completions for quest {questName}", ChatMessageType.Broadcast));
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            session.Network.EnqueueSend(new GameMessageSystemChat($"{i + 1}: {list[i].Score:N0} - {list[i].Character}", ChatMessageType.Broadcast));
+                        }
+                    }
+                    else
+                    {
+                        session.Network.EnqueueSend(new GameMessageSystemChat($"The quest {questName} has not been completed yet.", ChatMessageType.Broadcast));
+                    }
+                }
+                else
+                {
+                    var completions = DatabaseManager.Shard.BaseDatabase.GetServerQuestCompletions(questName);
+                    session.Network.EnqueueSend(new GameMessageSystemChat($"The quest {questName} has been completed {completions} times.", ChatMessageType.Broadcast));
+                }
             }
             else
             {
-                session.Player.SendMessage($"You must specify a quest name.");
+                session.Network.EnqueueSend(new GameMessageSystemChat($"You must specify a quest name.", ChatMessageType.Broadcast));
             }
         }
     }
