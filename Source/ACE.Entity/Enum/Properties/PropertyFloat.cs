@@ -236,5 +236,7 @@ namespace ACE.Entity.Enum.Properties
         EnrageDamageMultiplier         = 9011,
         EnrageDamageReduction          = 9012,
         EnrageThreshold                = 9013,
+        NSCoordinates                  = 9014,
+        EWCoordinates                  = 9015,
     }
 }

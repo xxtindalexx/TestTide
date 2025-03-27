@@ -2581,6 +2581,18 @@ namespace ACE.Server.WorldObjects
             set { if (!value.HasValue) RemoveProperty(PropertyInt.EnrageVisualEffect); else SetProperty(PropertyInt.EnrageVisualEffect, value.Value); }
         }
 
+        public double? NSCoordinates
+        {
+            get => GetProperty(PropertyFloat.NSCoordinates);
+            set { if (!value.HasValue) RemoveProperty(PropertyFloat.NSCoordinates); else SetProperty(PropertyFloat.NSCoordinates, value.Value); }
+        }
+
+        public double? EWCoordinates
+        {
+            get => GetProperty(PropertyFloat.EWCoordinates);
+            set { if (!value.HasValue) RemoveProperty(PropertyFloat.EWCoordinates); else SetProperty(PropertyFloat.EWCoordinates, value.Value); }
+        }
+
         /// <summary>
         /// <para>Used to mark when EnterWorld has completed for first time for this object's instance.</para>
         /// Currently used by Generators and Players

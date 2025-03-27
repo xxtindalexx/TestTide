@@ -137,6 +137,8 @@ namespace ACE.Server.Factories
                     return new CraftTool(weenie, guid);
                 case WeenieType.LightSource:
                     return new LightSource(weenie, guid);
+                case WeenieType.TreasureMap:
+                    return new TreasureMap(weenie, guid);
                 default:
                     return new GenericObject(weenie, guid);
             }
@@ -252,6 +254,8 @@ namespace ACE.Server.Factories
                     return new CraftTool(biota);
                 case WeenieType.LightSource:
                     return new LightSource(biota);
+                case WeenieType.TreasureMap:
+                    return new TreasureMap(biota);
                 default:
                     return new GenericObject(biota);
             }

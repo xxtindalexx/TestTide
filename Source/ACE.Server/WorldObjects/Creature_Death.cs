@@ -14,6 +14,7 @@ using ACE.Server.Factories;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.Common;
 
 namespace ACE.Server.WorldObjects
 {
@@ -664,7 +665,39 @@ namespace ACE.Server.WorldObjects
         {
             var droppedItems = new List<WorldObject>();
 
-            // create death treasure from loot generation factory
+            // 100% chance for the mob to drop a treasure map (for testing)
+            if (IsMonster && ThreadSafeRandom.Next(0.0f, 1.0f) < 1.0f)  // 100% chance for testing
+            {
+                //Console.WriteLine($"[DEBUG] Treasure map creation triggered for creature: {this.Name}");
+
+                // Call the TryCreateTreasureMap method from TreasureMap.cs
+                var map = TreasureMap.TryCreateTreasureMap(this);
+
+                // Check if the map creation was successful
+                if (map != null)
+                {
+                    // Log successful map creation
+                    //Console.WriteLine("[DEBUG] Treasure map created successfully.");
+
+                    // Add the map to the corpse's inventory, or add it to dropped items if no corpse
+                    if (corpse != null)
+                    {
+                        //Console.WriteLine("[DEBUG] Adding map to corpse inventory.");
+                        corpse.TryAddToInventory(map);
+                    }
+                    else
+                    {
+                        //Console.WriteLine("[DEBUG] Adding map to dropped items.");
+                        droppedItems.Add(map);
+                    }
+                }
+                else
+                {
+                    //Console.WriteLine("[DEBUG] Treasure map creation failed.");
+                }
+            }
+
+            // Continue with other drops (DeathTreasure, wielded items, etc.)
             if (DeathTreasure != null)
             {
                 List<WorldObject> items = LootGenerationFactory.CreateRandomLootObjects(DeathTreasure);

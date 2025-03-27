@@ -20,6 +20,7 @@ namespace ACE.Database.Models.World
         public virtual DbSet<CookBook> CookBook { get; set; }
         public virtual DbSet<Encounter> Encounter { get; set; }
         public virtual DbSet<Event> Event { get; set; }
+        public virtual DbSet<LandblockDescription> LandblockDescription { get; set; }
         public virtual DbSet<HousePortal> HousePortal { get; set; }
         public virtual DbSet<LandblockInstance> LandblockInstance { get; set; }
         public virtual DbSet<LandblockInstanceLink> LandblockInstanceLink { get; set; }
@@ -131,6 +132,47 @@ namespace ACE.Database.Models.World
                     .WithMany(p => p.CookBook)
                     .HasForeignKey(d => d.RecipeId)
                     .HasConstraintName("cookbook_recipe");
+            });
+
+            modelBuilder.Entity<LandblockDescription>(entity =>
+            {
+                entity.ToTable("landblock_description");
+
+                entity.HasIndex(e => e.Landblock, "landblock_idx");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasComment("Unique Id of this landblock description instance");
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .ValueGeneratedOnAddOrUpdate()
+                    .HasColumnName("last_Modified")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(e => e.Landblock)
+                    .HasColumnName("landblock");
+
+                entity.Property(e => e.Name)
+                    .HasColumnName("name");
+
+                entity.Property(e => e.IsDungeon)
+                    .HasColumnName("is_Dungeon");
+
+                entity.Property(e => e.HasDungeon)
+                    .HasColumnName("has_Dungeon");
+
+                entity.Property(e => e.Directions)
+                    .HasColumnName("directions");
+
+                entity.Property(e => e.Reference)
+                    .HasColumnName("reference");
+
+                entity.Property(e => e.MacroRegion)
+                    .HasColumnName("macro_Region");
+
+                entity.Property(e => e.MicroRegion)
+                    .HasColumnName("micro_Region");
             });
 
             modelBuilder.Entity<Encounter>(entity =>

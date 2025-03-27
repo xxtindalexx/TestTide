@@ -831,7 +831,7 @@ namespace ACE.Server.Command.Handlers
                     break;
 
                 default:
-                    session.Player.SendMessage("Invalid auction command. Use: list | sell | bid | buyout | preview | retrieve | cancel.");
+                    session.Player.SendMessage("Invalid auction command. Use: list | sell | bid | buyout | retrieve | cancel.");
                     break;
             }
         }

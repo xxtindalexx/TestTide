@@ -394,6 +394,17 @@ namespace ACE.Database
         // Encounter
         // =====================================
 
+        public List<LandblockDescription> GetLandblockDescriptionsByLandblock(ushort landblockId)
+        {
+            using (var context = new WorldDbContext())
+            {
+                context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+                return context.LandblockDescription
+                    .Where(i => i.Landblock == landblockId)
+                    .ToList();
+            }
+        }
 
         // =====================================
         // Event
